@@ -1,0 +1,243 @@
+@model IEnumerable<KayipEsyaOtomasyonu.Models.KayipEsya>
+
+@{
+    ViewData["Title"] = "Kayıp Eşyalar";
+}
+
+<div class="dashboard-header mb-4">
+
+    <div>
+        <h2>Kayıp Eşya Listesi</h2>
+        <p class="text-muted mb-0">
+            Sistemde kayıtlı tüm kayıp eşyaları buradan yönetebilirsiniz.
+        </p>
+    </div>
+
+    <a asp-controller="KayipEsya"
+       asp-action="Create"
+       class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        Yeni Kayıp Eşya
+    </a>
+
+</div>
+
+<div class="card">
+
+    <div class="card-header d-flex justify-content-between align-items-center">
+
+        <div>
+
+            <h5 class="mb-1">
+                Kayıtlı Eşyalar
+            </h5>
+
+            <small class="text-muted">
+                Toplam @Model.Count() kayıt bulundu.
+            </small>
+
+        </div>
+
+    </div>
+
+    <div class="card-body">
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+
+                <h5>Henüz kayıt bulunmuyor</h5>
+
+                <p>
+                    İlk kayıp eşyayı eklemek için
+                    <strong>Yeni Kayıp Eşya</strong>
+                    butonunu kullanabilirsiniz.
+                </p>
+
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Eşya Adı</th>
+
+                            <th>Kategori</th>
+
+                            <th>Marka</th>
+
+                            <th>Renk</th>
+
+                            <th>Bulunma Tarihi</th>
+
+                            <th>Durum</th>
+
+                            <th class="text-end">
+                                İşlemler
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var esya in Model)
+                        {
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        @esya.EsyaAdi
+                                    </strong>
+
+                                </td>
+
+                                <td>
+
+                                    @(esya.Kategori?.Ad ?? "-")
+
+                                </td>
+
+                                <td>
+
+                                    @(string.IsNullOrWhiteSpace(esya.Marka)
+                                        ? "-"
+                                        : esya.Marka)
+
+                                </td>
+
+                                <td>
+
+                                    @(string.IsNullOrWhiteSpace(esya.Renk)
+                                        ? "-"
+                                        : esya.Renk)
+
+                                </td>
+
+                                <td>
+
+                                    @esya.BulunmaTarihi.ToString("dd.MM.yyyy")
+
+                                </td>
+
+                                <td>
+
+                                    @switch (esya.Durum)
+                                    {
+                                        case "Teslim Edildi":
+
+                                            <span class="badge bg-success">
+                                                Teslim Edildi
+                                            </span>
+
+                                            break;
+
+                                        case "Teslim Bekliyor":
+
+                                            <span class="badge bg-warning text-dark">
+                                                Teslim Bekliyor
+                                            </span>
+
+                                            break;
+
+                                        case "Depoda":
+
+                                            <span class="badge bg-primary">
+                                                Depoda
+                                            </span>
+
+                                            break;
+
+                                        default:
+
+                                            <span class="badge bg-secondary">
+                                                @esya.Durum
+                                            </span>
+
+                                            break;
+                                    }
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <a asp-controller="KayipEsya"
+                                       asp-action="Details"
+                                       asp-route-id="@esya.Id"
+                                       class="btn btn-outline-primary btn-sm"
+                                       title="Detay">
+
+                                        <i class="bi bi-eye"></i>
+
+                                    </a>
+
+                                    <a asp-controller="KayipEsya"
+                                       asp-action="Edit"
+                                       asp-route-id="@esya.Id"
+                                       class="btn btn-warning btn-sm"
+                                       title="Düzenle">
+
+                                        <i class="bi bi-pencil"></i>
+
+                                    </a>
+
+                                    @if (esya.AktifMi)
+                                    {
+                                        <form asp-controller="KayipEsya"
+                                              asp-action="PasifeAl"
+                                              asp-route-id="@esya.Id"
+                                              method="post"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    class="btn btn-outline-secondary btn-sm"
+                                                    title="Pasif Et"
+                                                    onclick="return confirm('Bu kaydı pasif hale getirmek istediğinize emin misiniz?');">
+                                                <i class="bi bi-archive"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-controller="KayipEsya"
+                                              asp-action="AktifEt"
+                                              asp-route-id="@esya.Id"
+                                              method="post"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    class="btn btn-outline-success btn-sm"
+                                                    title="Aktif Et"
+                                                    onclick="return confirm('Bu kaydı aktif hale getirmek istediğinize emin misiniz?');">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
+
+</div>

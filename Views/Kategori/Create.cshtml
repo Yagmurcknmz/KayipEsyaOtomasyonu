@@ -1,0 +1,39 @@
+﻿@model KayipEsyaOtomasyonu.Models.Kategori
+
+@{
+    ViewData["Title"] = "Yeni Kategori";
+}
+
+<h2>Yeni Kategori Ekle</h2>
+
+<form asp-action="Create" method="post">
+
+    <div class="mb-3">
+        <label asp-for="Ad" class="form-label"></label>
+
+        <input asp-for="Ad" class="form-control" />
+
+        <span asp-validation-for="Ad" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Aciklama" class="form-label"></label>
+
+        <textarea asp-for="Aciklama"
+                  class="form-control"
+                  rows="4"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+        Kaydet
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Geri Dön
+    </a>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,71 @@
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+*.VC.db
+*.opendb
+*.svclog
+*.scc
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.rsuser
+*.nuget.props
+*.nuget.targets
+
+## ASP.NET Core
+appsettings.local.json
+appsettings.*.local.json
+*.pfx
+*.key
+
+## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## OS generated files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+## Node.js (front-end kütüphaneler için)
+node_modules/
+
+## Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache

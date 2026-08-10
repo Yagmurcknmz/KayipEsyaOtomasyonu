@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="tr">
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject KayipEsyaOtomasyonu.Data.ApplicationDbContext DbCtx
+@{
+    int bildirimSayisi = 0;
+    List<KayipEsyaOtomasyonu.Models.Bildirim> sonBildirimler = new();
+    string? currentUserId = null;
+    ApplicationUser? currentUser = null;
+    string aktifRol = "Kullanıcı";
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+        currentUserId = currentUser?.Id;
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            bildirimSayisi = await DbCtx.Bildirimler
+                .AsNoTracking()
+                .CountAsync(b => b.AliciUserId == currentUserId && !b.OkunduMu && b.AktifMi);
+
+            sonBildirimler = await DbCtx.Bildirimler
+                .AsNoTracking()
+                .Include(b => b.KayipBildirimi)
+                .Where(b => b.AliciUserId == currentUserId && b.AktifMi)
+                .OrderByDescending(b => b.OlusturulmaTarihi)
+                .Take(5)
+                .ToListAsync();
+        }
+        var roller = await UserManager.GetRolesAsync(currentUser ?? new ApplicationUser());
+        aktifRol = roller.FirstOrDefault() ?? "Kullanıcı";
+    }
+    string userHarf = (!string.IsNullOrWhiteSpace(currentUser?.Ad))
+        ? currentUser.Ad.Trim()[0].ToString().ToUpperInvariant()
+        : ((User.Identity?.Name?.Length ?? 0) > 0 ? User.Identity!.Name![0].ToString().ToUpperInvariant() : "K");
+    string userAdSoyad = $"{currentUser?.Ad} {currentUser?.Soyad}".Trim();
+    if (string.IsNullOrWhiteSpace(userAdSoyad)) userAdSoyad = User.Identity?.Name ?? "Kullanıcı";
+    string rolRenk = aktifRol.ToLower() switch
+    {
+        "admin" => "bg-danger",
+        "personel" => "bg-primary",
+        "vatandaş" or "vatandas" => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - Kayıp Eşya Yönetim Sistemi
+    </title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+</head>
+
+<body>
+
+    <div class="main-wrapper main-wrapper-full">
+
+        <header class="topbar">
+
+            <div class="topbar-left">
+
+                <a asp-controller="Home" asp-action="Index" class="d-flex align-items-center gap-2 text-decoration-none text-dark me-2 flex-shrink-0">
+                    <div class="p-2 rounded-3 d-inline-flex"
+                         style="background:linear-gradient(135deg,#0b5cff,#052a91);">
+                        <i class="bi bi-search text-white fs-4"></i>
+                    </div>
+                    <div class="d-none d-sm-block">
+                        <h5 class="mb-0 lh-1 fw-bold">Kayıp Eşya</h5>
+                        <small class="text-muted">Yönetim Sistemi</small>
+                    </div>
+                </a>
+
+                <nav class="d-none d-lg-flex align-items-center gap-2 ms-3 ps-3"
+                     style="border-left:1px solid var(--border);flex-wrap:wrap;">
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       class="topbar-nav-link">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        Ana Sayfa
+                    </a>
+                    <a asp-controller="KayipEsya"
+                       asp-action="Index"
+                       class="topbar-nav-link">
+                        <i class="bi bi-box-seam-fill"></i>
+                        Kayıp Eşyalar
+                    </a>
+                    <a asp-controller="KayipBasvuru"
+                       asp-action="Index"
+                       class="topbar-nav-link">
+                        <i class="bi bi-clipboard-check-fill"></i>
+                        Başvurular
+                    </a>
+                    <a asp-controller="Eslesme"
+                       asp-action="Index"
+                       class="topbar-nav-link">
+                        <i class="bi bi-arrow-left-right"></i>
+                        Eşleşmeler
+                    </a>
+                    <a asp-controller="TeslimIslemleri"
+                       asp-action="Index"
+                       class="topbar-nav-link">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Teslim İşlemleri
+                    </a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <span class="text-muted small mx-2">•</span>
+                        <a asp-controller="Kategori"
+                           asp-action="Index"
+                           class="topbar-nav-link">
+                            <i class="bi bi-tags-fill"></i>
+                            Kategoriler
+                        </a>
+                        <a asp-controller="Kullanici"
+                           asp-action="Index"
+                           class="topbar-nav-link">
+                            <i class="bi bi-people-fill"></i>
+                            Kullanıcılar
+                        </a>
+                    }
+                </nav>
+
+            </div>
+
+            <div class="topbar-center align-items-center justify-content-center flex-grow-1 min-w-0">
+
+                <div class="d-md-none flex-column w-100">
+                    <h4 class="mb-0 text-truncate w-100 text-center">@ViewData["Title"]</h4>
+                    <span class="text-muted small text-truncate w-100 text-center">
+                        Yönetim Paneli
+                    </span>
+                </div>
+
+                <form asp-controller="Home"
+                      asp-action="Arama"
+                      method="get"
+                      class="d-none d-md-flex w-100 align-items-center justify-content-center"
+                      style="max-width:720px;">
+                    <div class="input-group shadow-sm w-100" style="border-radius:12px;">
+                        <span class="input-group-text bg-white border-end-0 py-2"
+                              style="border-radius:12px 0 0 12px;">
+                            <i class="bi bi-search text-secondary"></i>
+                        </span>
+                        <input name="ara"
+                               class="form-control border-start-0 ps-0 py-2"
+                               style="border-radius:0;"
+                               placeholder="Eşya, başvuru, kişi, marka, kategori ara..." />
+                        <button type="submit"
+                                class="btn btn-primary"
+                                style="border-radius:0 12px 12px 0;min-width:45px;">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+
+            <div class="d-md-none flex-grow-1 min-w-0 ms-2" style="display:none !important;">
+                <h4 class="mb-0 text-truncate">@ViewData["Title"]</h4>
+                <span class="text-muted small text-truncate d-block d-sm-none">
+                    Yönetim Paneli
+                </span>
+            </div>
+
+            <div class="topbar-right">
+
+                <div class="d-flex d-md-none me-2">
+                    <button type="button"
+                            class="btn btn-outline-secondary d-flex align-items-center justify-content-center rounded-3"
+                            style="width:42px;height:42px;"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#mobileArama">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <div class="collapse d-md-none col-12 px-3 py-2"
+                     id="mobileArama"
+                     style="position:absolute;top:100%;left:0;right:0;background:#fff;border-bottom:1px solid var(--border);z-index:9998;">
+                    <form asp-controller="Home"
+                          asp-action="Arama"
+                          method="get">
+                        <div class="input-group shadow-sm" style="border-radius:12px;">
+                            <span class="input-group-text bg-white border-end-0 py-2"
+                                  style="border-radius:12px 0 0 12px;">
+                                <i class="bi bi-search text-secondary"></i>
+                            </span>
+                            <input name="ara"
+                                   class="form-control border-start-0 ps-0 py-2"
+                                   style="border-radius:0;"
+                                   placeholder="Ara..." />
+                            <button type="submit"
+                                    class="btn btn-primary"
+                                    style="border-radius:0 12px 12px 0;min-width:45px;">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="dropdown">
+
+                    <button type="button"
+                            class="topbar-icon-button dropdown-toggle p-0 border-0 bg-transparent"
+                            title="Bildirimler"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            id="bildirimDropdown">
+
+                        <i class="bi bi-@(bildirimSayisi > 0 ? "bell-fill" : "bell") @(bildirimSayisi > 0 ? "text-danger" : "")" style="font-size:1.2rem;"></i>
+                        @if (bildirimSayisi > 0)
+                        {
+                            <span class="notification-badge bg-danger">
+                                @(bildirimSayisi > 99 ? "99+" : bildirimSayisi.ToString())
+                            </span>
+                        }
+
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 py-2 overflow-hidden"
+                        style="width:400px;max-width:95vw;"
+                        aria-labelledby="bildirimDropdown">
+                        <li class="px-3 py-2 d-flex align-items-center justify-content-between border-bottom">
+                            <h6 class="mb-0 fw-bold">
+                                <i class="bi bi-bell me-1"></i>
+                                Bildirimler
+                                @if (bildirimSayisi > 0)
+                                {
+                                    <span class="badge rounded-pill bg-danger ms-2">@bildirimSayisi okunmamış</span>
+                                }
+                            </h6>
+                        </li>
+                        <li>
+                            <div style="max-height:360px;overflow-y:auto;">
+                                @if (sonBildirimler.Count == 0)
+                                {
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox display-6 opacity-25"></i>
+                                        <div class="mt-2 small">Henüz bildirim yok</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @foreach (var b in sonBildirimler)
+                                    {
+                                        var turIkon = b.Turu switch
+                                        {
+                                            BildirimTuru.EslesmeBulundu => "bi-magic text-success",
+                                            BildirimTuru.TeslimOnayi => "bi-check-circle-fill text-primary",
+                                            BildirimTuru.BasvuruDurumu => "bi-info-circle-fill text-info",
+                                            _ => "bi-bell text-secondary"
+                                        };
+
+                                        string detayLink =
+                                            b.KayipBildirimiId.HasValue
+                                                ? Url.Action("Details", "KayipBasvuru", new { id = b.KayipBildirimiId.Value }) ?? "#"
+                                                : "#";
+
+                                        string okunduCss = !b.OkunduMu
+                                            ? "background-color:#f8f9fa;border-left:3px solid #dc3545;"
+                                            : "";
+                                        <a href="@detayLink"
+                                           class="dropdown-item d-flex gap-3 align-items-start py-2 px-3 border-bottom @(!b.OkunduMu ? "bg-light" : "")"
+                                           style="@okunduCss">
+                                            <div class="mt-1 flex-shrink-0">
+                                                <i class="bi @turIkon fs-5"></i>
+                                            </div>
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="fw-semibold small mb-0">@b.Baslik</div>
+                                                @if (!string.IsNullOrWhiteSpace(b.Icerik))
+                                                {
+                                                    <div class="small text-muted mb-1 line-clamp-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                                                        @b.Icerik
+                                                    </div>
+                                                }
+                                                <small class="text-black-50">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    @b.OlusturulmaTarihi.ToString("dd.MM.yyyy HH:mm")
+                                                </small>
+                                            </div>
+                                        </a>
+                                    }
+                                }
+                            </div>
+                        </li>
+                        @if (sonBildirimler.Count > 0)
+                        {
+                            <li class="border-top p-2 d-flex justify-content-between gap-2">
+                                @if (User.IsInRole("Vatandas"))
+                                {
+                                    <a asp-controller="Vatandas"
+                                       asp-action="Bildirimlerim"
+                                       class="btn btn-sm btn-outline-primary w-50 rounded-3">
+                                        <i class="bi bi-list-ul me-1"></i>
+                                        Tümünü Gör
+                                    </a>
+                                }
+                                if (bildirimSayisi > 0)
+                                {
+                                    <form asp-controller="Home"
+                                          asp-action="TumBildirimleriOkunduYap"
+                                          method="post"
+                                          class="m-0 w-50">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-secondary w-100 rounded-3">
+                                            <i class="bi bi-check-all me-1"></i>
+                                            Tümünü Okundu İşaretle
+                                        </button>
+                                    </form>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="dropdown user-area user-dropdown" style="position:relative;">
+                    <button type="button"
+                            class="btn user-menu-trigger d-flex align-items-center gap-2 px-2 py-1"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false"
+                            style="border:0;background:transparent;">
+                        <span class="user-avatar d-inline-flex align-items-center justify-content-center fw-bold text-white rounded-circle shadow-sm"
+                              style="width:40px;height:40px;font-size:15px;
+                                     background:linear-gradient(135deg,#0b5cff,#052a91);border:2px solid #fff;">
+                            @userHarf
+                        </span>
+                        <span class="d-none d-md-flex flex-column align-items-start text-start">
+                            <strong class="text-nowrap" style="color:#0f172a;font-size:13px;line-height:1.1;">
+                                @userAdSoyad
+                            </strong>
+                            <span class="badge rounded-pill px-2 mt-1 @rolRenk"
+                                  style="font-size:10px;font-weight:600;">
+                                @aktifRol
+                            </span>
+                        </span>
+                        <i class="bi bi-chevron-down d-none d-md-inline"
+                           style="color:#64748b;font-size:12px;"></i>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end border rounded-4 shadow-lg p-2 mt-2"
+                        style="min-width:280px;z-index:99999;">
+                        <li>
+                            <div class="px-3 py-2 border-bottom mb-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="user-avatar d-inline-flex align-items-center justify-content-center fw-bold text-white rounded-circle shadow-sm"
+                                          style="width:42px;height:42px;
+                                                 background:linear-gradient(135deg,#0b5cff,#052a91);">
+                                        @userHarf
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="fw-semibold text-truncate" style="font-size:14px;color:#0f172a;">
+                                            @userAdSoyad
+                                        </div>
+                                        <div class="small text-truncate text-muted">
+                                            @User.Identity?.Name
+                                        </div>
+                                        <div>
+                                            <span class="badge rounded-pill px-2 mt-1 @rolRenk">
+                                                @aktifRol Paneli
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                               asp-controller="Account"
+                               asp-action="Profilim">
+                                <i class="bi bi-person-gear me-1 text-primary"></i>
+                                <strong>Profilim</strong>
+                                <span class="ms-auto small text-muted">Kişisel bilgiler</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                               asp-controller="KayipBasvuru"
+                               asp-action="Index">
+                                <i class="bi bi-clipboard2-data me-1 text-info"></i>
+                                <strong>Başvurular</strong>
+                                <span class="ms-auto small text-muted">Tüm liste</span>
+                            </a>
+                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li>
+                                <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                                   asp-controller="Kullanici"
+                                   asp-action="Index">
+                                    <i class="bi bi-people-fill me-1 text-warning"></i>
+                                    <strong>Kullanıcılar</strong>
+                                    <span class="ms-auto small text-muted">Yönetim</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                                   asp-controller="Kategori"
+                                   asp-action="Index">
+                                    <i class="bi bi-tags-fill me-1 text-success"></i>
+                                    <strong>Kategoriler</strong>
+                                    <span class="ms-auto small text-muted">Yönetim</span>
+                                </a>
+                            </li>
+                        }
+                        <li>
+                            <hr class="dropdown-divider my-2">
+                        </li>
+                        <li>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <form asp-controller="Account"
+                                      asp-action="Logout"
+                                      method="post"
+                                      class="m-0 px-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="dropdown-item rounded-3 w-100 d-flex align-items-center gap-2"
+                                            style="color:#dc2626;font-weight:600;">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        Güvenli Çıkış
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a class="dropdown-item rounded-3 w-100 d-flex align-items-center gap-2"
+                                   asp-controller="Account"
+                                   asp-action="Login"
+                                   style="color:#0b5cff;font-weight:600;">
+                                    <i class="bi bi-box-arrow-in-right"></i>
+                                    Giriş Yap
+                                </a>
+                            }
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </header>
+
+        <main class="content-area">
+
+            @if (TempData["BasariliMesaj"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm"
+                     role="alert">
+
+                    <i class="bi bi-check-circle-fill me-2"></i>
+
+                    @TempData["BasariliMesaj"]
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Kapat">
+                    </button>
+
+                </div>
+            }
+
+            @if (TempData["HataMesaji"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm"
+                     role="alert">
+
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+
+                    @TempData["HataMesaji"]
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Kapat">
+                    </button>
+
+                </div>
+            }
+
+            @RenderBody()
+
+        </main>
+
+        <footer class="main-footer">
+
+            <span>
+                © @DateTime.Now.Year Arnavutköy Belediyesi
+            </span>
+
+            <span>
+                Kayıp Eşya Yönetim Sistemi
+            </span>
+
+        </footer>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

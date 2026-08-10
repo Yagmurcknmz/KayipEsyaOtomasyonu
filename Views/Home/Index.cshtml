@@ -1,0 +1,657 @@
+@model KayipEsyaOtomasyonu.ViewModels.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Ana Sayfa";
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h2>Kayıp Eşya Yönetim Paneli</h2>
+        <p class="text-muted mb-0">
+            Arnavutköy Belediyesi Kayıp Eşya Yönetim Sistemi
+        </p>
+    </div>
+
+    <a asp-controller="KayipEsya"
+       asp-action="Create"
+       class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        Yeni Kayıp Eşya
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon stat-primary">
+                <i class="bi bi-box-seam-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Toplam Kayıp Eşya</span>
+                <h3>@Model.ToplamKayipEsya</h3>
+                <small>Sistemde kayıtlı toplam eşya</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon stat-warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Depoda Bekleyen</span>
+                <h3>@Model.DepodaBekleyen</h3>
+                <small>Teslim edilmeyi bekleyen kayıtlar</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon stat-success">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Teslim Edilen</span>
+                <h3>@Model.TeslimEdilen</h3>
+                <small>Sahibine teslim edilen eşyalar</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon stat-info">
+                <i class="bi bi-archive-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Aktif Kayıt</span>
+                <h3>@Model.AktifKayipEsya</h3>
+                <small>İşlem süreci devam eden</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background:#f3e8ff;color:#7e22ce;">
+                <i class="bi bi-clipboard2-data-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Vatandaş Bildirimi</span>
+                <h3>@Model.ToplamVatandasBildirimi</h3>
+                <small>Toplam kayıp bildirimi</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background:#fef2f2;color:#b91c1c;">
+                <i class="bi bi-megaphone-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Aktif Başvuru</span>
+                <h3>@Model.AktifBasvuru</h3>
+                <small>Sonuç bekleyen başvurular</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background:#ecfeff;color:#0e7490;">
+                <i class="bi bi-people-fill"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Toplam Kullanıcı</span>
+                <h3>@Model.ToplamKullanici</h3>
+                <small>
+                    <span class="text-success">@Model.ToplamVatandas Vatandaş</span> ·
+                    <span class="text-primary">@Model.ToplamPersonel Personel</span>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-card-icon" style="background:#fff7ed;color:#c2410c;">
+                <i class="bi bi-link-45deg"></i>
+            </div>
+
+            <div class="stat-card-content">
+                <span>Bekleyen Eşleşmeler</span>
+                <h3>@Model.BekleyenEslesme</h3>
+                <small>Onay bekleyen eşleşmeler</small>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-xl-8">
+        <div class="card h-100">
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Son Eklenen Kayıp Eşyalar</h5>
+                    <small class="text-muted">
+                        Sisteme son eklenen 8 kayıt
+                    </small>
+                </div>
+
+                <a asp-controller="KayipEsya"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-primary">
+                    Tümünü Gör
+                </a>
+            </div>
+
+            <div class="card-body p-0">
+
+                @if (!Model.SonKayipEsyalar.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-inbox-fill"></i>
+                        </div>
+
+                        <h5>Henüz kayıt bulunmuyor</h5>
+
+                        <p>
+                            İlk kayıp eşyayı eklediğinizde burada görüntülenecektir.
+                        </p>
+
+                        <a asp-controller="KayipEsya"
+                           asp-action="Create"
+                           class="btn btn-primary mt-2">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            İlk Kaydı Oluştur
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Eşya</th>
+                                    <th>Kategori</th>
+                                    <th>Bulunma Yeri</th>
+                                    <th>Durum</th>
+                                    <th>Tarih</th>
+                                    <th class="text-end">İşlem</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var esya in Model.SonKayipEsyalar)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div style="width:38px;height:38px;border-radius:10px;background:#eef2ff;color:#4f46e5;display:grid;place-items:center;">
+                                                    <i class="bi bi-box-seam"></i>
+                                                </div>
+                                                <strong>@esya.EsyaAdi</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">
+                                                @(esya.Kategori?.Ad ?? "-")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @(string.IsNullOrWhiteSpace(esya.BulunmaYeri)
+                                                ? "-"
+                                                : esya.BulunmaYeri)
+                                        </td>
+                                        <td>
+                                            @switch (esya.Durum)
+                                            {
+                                                case "Yeni Kayıt":
+                                                    <span class="badge bg-primary">@esya.Durum</span>
+                                                    break;
+                                                case "Depoda":
+                                                    <span class="badge bg-warning text-dark">@esya.Durum</span>
+                                                    break;
+                                                case "Eşleşme Bulundu":
+                                                    <span class="badge bg-info text-dark">@esya.Durum</span>
+                                                    break;
+                                                case "Teslim Edildi":
+                                                    <span class="badge bg-success">@esya.Durum</span>
+                                                    break;
+                                                case "Arşivlendi":
+                                                    <span class="badge bg-secondary">@esya.Durum</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@esya.Durum</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            <small>@esya.OlusturmaTarihi.ToString("dd.MM.yyyy")</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <a asp-controller="KayipEsya"
+                                               asp-action="Details"
+                                               asp-route-id="@esya.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h5 class="mb-1">Hızlı İşlemler</h5>
+                <small class="text-muted">
+                    Sık kullanılan işlemler
+                </small>
+            </div>
+
+            <div class="card-body">
+
+                <div class="quick-actions">
+
+                    <a asp-controller="KayipEsya"
+                       asp-action="Create"
+                       class="quick-action-item">
+
+                        <div class="quick-action-icon">
+                            <i class="bi bi-plus-square-fill"></i>
+                        </div>
+
+                        <div>
+                            <strong>Yeni Kayıp Eşya</strong>
+                            <span>Bulunan eşyayı sisteme kaydet</span>
+                        </div>
+
+                        <i class="bi bi-chevron-right ms-auto"></i>
+                    </a>
+
+                    <a asp-controller="KayipEsya"
+                       asp-action="Index"
+                       class="quick-action-item">
+
+                        <div class="quick-action-icon">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+
+                        <div>
+                            <strong>Kayıp Eşyaları Gör</strong>
+                            <span>Kayıtlı eşyaları listele</span>
+                        </div>
+
+                        <i class="bi bi-chevron-right ms-auto"></i>
+                    </a>
+
+                    <a asp-controller="KayipBasvuru"
+                       asp-action="Index"
+                       class="quick-action-item">
+
+                        <div class="quick-action-icon" style="background:#fef2f2;color:#b91c1c;">
+                            <i class="bi bi-clipboard-check-fill"></i>
+                        </div>
+
+                        <div>
+                            <strong>Kayıp Başvuruları</strong>
+                            <span>Vatandaş başvurularını incele</span>
+                        </div>
+
+                        <i class="bi bi-chevron-right ms-auto"></i>
+                    </a>
+
+                    <a asp-controller="Kategori"
+                       asp-action="Index"
+                       class="quick-action-item">
+
+                        <div class="quick-action-icon">
+                            <i class="bi bi-tags-fill"></i>
+                        </div>
+
+                        <div>
+                            <strong>Kategorileri Yönet</strong>
+                            <span>Kategori listesini görüntüle</span>
+                        </div>
+
+                        <i class="bi bi-chevron-right ms-auto"></i>
+                    </a>
+
+                    <a asp-controller="Kullanici"
+                       asp-action="Index"
+                       class="quick-action-item">
+
+                        <div class="quick-action-icon" style="background:#eff6ff;color:#1d4ed8;">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+
+                        <div>
+                            <strong>Kullanıcıları Yönet</strong>
+                            <span>Personel ve Admin hesapları</span>
+                        </div>
+
+                        <i class="bi bi-chevron-right ms-auto"></i>
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4">
+
+    <div class="col-xl-6">
+        <div class="card h-100">
+
+            <div class="card-header">
+                <h5 class="mb-1">Duruma Göre Dağılım</h5>
+                <small class="text-muted">
+                    Kayıp eşyaların mevcut durumları
+                </small>
+            </div>
+
+            <div class="card-body">
+
+                @if (!Model.DurumBazliDagilim.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-bar-chart-fill"></i>
+                        </div>
+                        <h5>Henüz veri yok</h5>
+                        <p>Sisteme kayıt eklendiğinde durum dağılımı burada görünecek.</p>
+                    </div>
+                }
+                else
+                {
+                    foreach (var durum in Model.DurumBazliDagilim)
+                    {
+                        var yuzde = Model.ToplamKayipEsya > 0
+                            ? Math.Round(durum.Adet * 100.0 / Model.ToplamKayipEsya, 1)
+                            : 0;
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <strong class="small">@durum.Durum</strong>
+                                <span class="small text-muted">@durum.Adet adet · %@yuzde</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 8px;">
+                                <div class="progress-bar @durum.Renk"
+                                     style="width:@yuzde%"></div>
+                            </div>
+                        </div>
+                    }
+                }
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="card h-100">
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Kategori Dağılımı</h5>
+                    <small class="text-muted">
+                        En çok kaydedilen ilk 8 kategori
+                    </small>
+                </div>
+                <a asp-controller="Kategori"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-primary">
+                    Tümü
+                </a>
+            </div>
+
+            <div class="card-body">
+
+                @if (!Model.KategoriBazliDagilim.Any())
+                {
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-tags-fill"></i>
+                        </div>
+                        <h5>Henüz veri yok</h5>
+                        <p>Sisteme kayıt eklendiğinde kategori dağılımı burada görünecek.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var ktg in Model.KategoriBazliDagilim)
+                        {
+                            <div class="col-6 col-sm-4">
+                                <div class="p-3 border rounded-3 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge bg-primary">@ktg.Adet</span>
+                                        <small class="text-muted">%@ktg.Yuzde</small>
+                                    </div>
+                                    <div class="small fw-semibold text-truncate"
+                                         title="@ktg.KategoriAdi">
+                                        @ktg.KategoriAdi
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row g-4 mt-2">
+
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Son Başvurular</h5>
+                    <small class="text-muted">Vatandaşlardan gelen son 5 başvuru</small>
+                </div>
+                <a asp-controller="KayipBasvuru"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-list-ul me-1"></i>Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.SonBasvurular.Any())
+                {
+                    <div class="empty-state p-4">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-clipboard2-x"></i>
+                        </div>
+                        <h5>Henüz başvuru yok</h5>
+                        <p>Vatandaşlar yeni kayıp bildirimi gönderdiğinde burada listelenecek.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Eşya</th>
+                                    <th>Kategori</th>
+                                    <th>Vatandaş</th>
+                                    <th>Durum</th>
+                                    <th>Tarih</th>
+                                    <th class="text-end">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var b in Model.SonBasvurular)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge"
+                                                      style="background:#fef2f2;color:#b91c1c;">
+                                                    <i class="bi bi-clipboard-fill me-1"></i>Bildirim
+                                                </span>
+                                                <strong>@(b.EsyaAdi ?? "-")</strong>
+                                            </div>
+                                        </td>
+                                        <td>@(b.Kategori?.Ad ?? "-")</td>
+                                        <td>
+                                            @(b.Vatandas != null ? b.Vatandas.Ad + " " + b.Vatandas.Soyad : "-")
+                                        </td>
+                                        <td>
+                                            @if (b.Durum == "Teslim Edildi")
+                                            {
+                                                <span class="badge bg-success">@b.Durum</span>
+                                            }
+                                            else if (b.Durum == "İşleme Alındı")
+                                            {
+                                                <span class="badge bg-primary">@b.Durum</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">@(string.IsNullOrWhiteSpace(b.Durum) ? "Beklemede" : b.Durum)</span>
+                                            }
+                                        </td>
+                                        <td><small>@b.BasvuruTarihi.ToString("dd.MM.yyyy")</small></td>
+                                        <td class="text-end">
+                                            <a asp-controller="KayipBildirimi"
+                                               asp-action="Details"
+                                               asp-route-id="@b.Id"
+                                               class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Son Eşleşmeler</h5>
+                    <small class="text-muted">Sistemin son 5 eşleşme kaydı</small>
+                </div>
+                <a asp-controller="Eslesme"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-diagram-2 me-1"></i>Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.SonEslesmeler.Any())
+                {
+                    <div class="empty-state p-4">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-link-45deg"></i>
+                        </div>
+                        <h5>Henüz eşleşme yok</h5>
+                        <p>Eşleşme oluşturduğunuzda burada listelenecek.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Başvuru</th>
+                                    <th>Eşya</th>
+                                    <th>Vatandaş</th>
+                                    <th>Durum</th>
+                                    <th>Tarih</th>
+                                    <th class="text-end">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var es in Model.SonEslesmeler)
+                                {
+                                    <tr>
+                                        <td><strong class="small">@(es.KayipBildirimi?.EsyaAdi ?? "-")</strong></td>
+                                        <td>
+                                            <strong class="small">@(es.KayipEsya?.EsyaAdi ?? "-")</strong>
+                                            <span class="badge bg-light text-dark ms-1" style="font-size:10px;">
+                                                @(es.KayipEsya?.Kategori?.Ad ?? "-")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @(es.KayipBildirimi?.Vatandas != null
+                                                ? es.KayipBildirimi.Vatandas.Ad + " " + es.KayipBildirimi.Vatandas.Soyad
+                                                : "-")
+                                        </td>
+                                        <td>
+                                            @switch (es.Durum)
+                                            {
+                                                case EslesmeDurumu.Beklemede:
+                                                    <span class="badge bg-warning text-dark">Beklemede</span>
+                                                    break;
+                                                case EslesmeDurumu.Onaylandi:
+                                                    <span class="badge bg-success">Onaylandı</span>
+                                                    break;
+                                                case EslesmeDurumu.Reddedildi:
+                                                    <span class="badge bg-danger">Reddedildi</span>
+                                                    break;
+                                                case EslesmeDurumu.TeslimEdildi:
+                                                    <span class="badge bg-primary">Teslim Edildi</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@es.Durum</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td><small>@es.OlusturmaTarihi.ToString("dd.MM.yyyy")</small></td>
+                                        <td class="text-end">
+                                            <a asp-controller="Eslesme"
+                                               asp-action="Details"
+                                               asp-route-id="@es.Id"
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

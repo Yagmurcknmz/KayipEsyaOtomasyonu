@@ -1,0 +1,141 @@
+@model IEnumerable<KayipEsyaOtomasyonu.Models.KayipEsya>
+
+@{
+    ViewData["Title"] = "Bulunan Eşyaları Sorgula";
+    Layout = "~/Views/Shared/_VatandasLayout.cshtml";
+
+    var kategoriler = ViewBag.Kategoriler as IEnumerable<KayipEsyaOtomasyonu.Models.Kategori> ?? Enumerable.Empty<KayipEsyaOtomasyonu.Models.Kategori>();
+    var seciliKategori = ViewData["kategoriId"] as int?;
+    var arananMetin = ViewData["aranan"] as string ?? "";
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h2>Bulunan Eşyalar</h2>
+        <p class="text-muted mb-0">
+            Belediyemize teslim edilen kayıp eşyaları arayın ve bulun.
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form asp-controller="Vatandas"
+              asp-action="BulunanEsyalar"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-5">
+                <label class="form-label fw-semibold">Ara</label>
+                <input type="text"
+                       name="aranan"
+                       value="@arananMetin"
+                       class="form-control"
+                       placeholder="Eşya adı, marka, model, renk, bulunma yeri, raf no..." />
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold">Kategori</label>
+                <select name="kategoriId"
+                        class="form-select">
+                    <option value="">Tüm Kategoriler</option>
+                    @foreach (var ktg in kategoriler)
+                    {
+                        <option value="@ktg.Id"
+                                selected="@(seciliKategori == ktg.Id)">
+                            @ktg.Ad
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3 d-grid">
+                <button type="submit"
+                        class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>
+                    Sorgula
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-1">Sonuçlar</h5>
+        <small class="text-muted">
+            @Model.Count() kayıt bulundu.
+        </small>
+    </div>
+
+    <div class="card-body">
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+
+                <h5>Sonuç bulunamadı</h5>
+
+                <p>
+                    Arama kriterlerinize uygun kayıt bulunamadı. Farklı bir arama yapmayı deneyin.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Eşya</th>
+                            <th>Kategori</th>
+                            <th>Marka / Model</th>
+                            <th>Renk</th>
+                            <th>Bulunma Tarihi</th>
+                            <th>Bulunma Yeri</th>
+                            <th>Raf No</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var esya in Model)
+                        {
+                            <tr>
+                                <td><strong>@esya.EsyaAdi</strong></td>
+                                <td>@(esya.Kategori?.Ad ?? "-")</td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(esya.Marka))
+                                    {
+                                        <div>@esya.Marka</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(esya.Model))
+                                    {
+                                        <small class="text-muted">@esya.Model</small>
+                                    }
+                                    @if (string.IsNullOrWhiteSpace(esya.Marka) &&
+                                        string.IsNullOrWhiteSpace(esya.Model))
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(esya.Renk) ? "-" : esya.Renk)</td>
+                                <td>@esya.BulunmaTarihi.ToString("dd.MM.yyyy")</td>
+                                <td>@(string.IsNullOrWhiteSpace(esya.BulunmaYeri) ? "-" : esya.BulunmaYeri)</td>
+                                <td>@(string.IsNullOrWhiteSpace(esya.RafNo) ? "-" : esya.RafNo)</td>
+                                <td>
+                                    <span class="badge bg-primary">@esya.Durum</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>

@@ -1,0 +1,310 @@
+@model KayipEsyaOtomasyonu.ViewModels.VatandasKayitViewModel
+
+@{
+    ViewData["Title"] = "Vatandaş Kayıt";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Vatandaş Kayıt</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+</head>
+
+<body class="register-page">
+
+    <div class="register-wrapper">
+
+        <div class="register-info-panel">
+
+            <div class="login-brand">
+                <div class="login-brand-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+
+                <div>
+                    <h2>Kayıp Eşya</h2>
+                    <span>Vatandaş Portalı</span>
+                </div>
+            </div>
+
+            <div class="register-info-content">
+
+                <span class="login-eyebrow">
+                    Arnavutköy Belediyesi
+                </span>
+
+                <h1>
+                    Kayıp Eşya Vatandaş Portalına Hoş Geldiniz
+                </h1>
+
+                <p>
+                    Kayıp eşya başvurularınızı oluşturabilir,
+                    başvurularınızı takip edebilir ve bulunan eşyaları
+                    sorgulayabilirsiniz.
+                </p>
+
+                <div class="login-feature-list">
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Online Kayıp Bildirimi</span>
+                    </div>
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-search"></i>
+                        <span>Bulunan Eşyaları Sorgulama</span>
+                    </div>
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Başvuru Durumu Takibi</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="register-form-panel">
+
+            <div class="register-form-container">
+
+                <div class="login-form-header">
+
+                    <h3>Vatandaş Hesabı Oluştur</h3>
+
+                    <p>
+                        Bilgilerinizi eksiksiz doldurunuz.
+                    </p>
+
+                </div>
+
+                <form asp-action="Register"
+                      asp-controller="Account"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger">
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Ad"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Ad"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Ad"
+                                  class="text-danger"></span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Soyad"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Soyad"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Soyad"
+                                  class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="Email"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="Email"
+                               class="form-control" />
+
+                        <span asp-validation-for="Email"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="TcKimlikNo"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
+                            <input asp-for="TcKimlikNo"
+                                   maxlength="11"
+                                   class="form-control rounded-end"
+                                   placeholder="11 haneli TC Kimlik No" />
+                        </div>
+
+                        <span asp-validation-for="TcKimlikNo"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="Telefon"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                            <input asp-for="Telefon"
+                                   class="form-control rounded-end"
+                                   placeholder="05XX XXX XX XX" />
+                        </div>
+
+                        <span asp-validation-for="Telefon"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="IlceMahalle"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                            <input asp-for="IlceMahalle"
+                                   class="form-control rounded-end"
+                                   placeholder="İlçe / Mahalle / Semt" />
+                        </div>
+
+                        <span asp-validation-for="IlceMahalle"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="Adres"
+                               class="form-label">
+                        </label>
+
+                        <textarea asp-for="Adres"
+                                  class="form-control"
+                                  rows="2"
+                                  placeholder="Açık adres (sokak, cadde, no, daire vb.)"></textarea>
+
+                        <span asp-validation-for="Adres"
+                              class="text-danger"></span>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="Sifre"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Sifre"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Sifre"
+                                  class="text-danger"></span>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label asp-for="SifreTekrar"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="SifreTekrar"
+                                   class="form-control" />
+
+                            <span asp-validation-for="SifreTekrar"
+                                  class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-check mb-4">
+
+                        <input asp-for="AydinlatmaMetniOnayi"
+                               class="form-check-input" />
+
+                        <label asp-for="AydinlatmaMetniOnayi"
+                               class="form-check-label">
+                        </label>
+
+                        <span asp-validation-for="AydinlatmaMetniOnayi"
+                              class="text-danger d-block">
+                        </span>
+
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary w-100">
+
+                        <i class="bi bi-person-plus-fill me-2"></i>
+
+                        Hesap Oluştur
+
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-4">
+
+                    <span class="text-muted">
+                        Zaten hesabınız var mı?
+                    </span>
+
+                    <a asp-controller="Account"
+                       asp-action="Login">
+
+                        Giriş Yap
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <partial name="_ValidationScriptsPartial" />
+
+</body>
+</html>

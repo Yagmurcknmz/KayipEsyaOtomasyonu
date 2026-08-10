@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="tr">
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject KayipEsyaOtomasyonu.Data.ApplicationDbContext DbCtx
+@{
+    int bildirimSayisi = 0;
+    List<KayipEsyaOtomasyonu.Models.Bildirim> sonBildirimler = new();
+    string? currentUserId = null;
+    ApplicationUser? currentUser = null;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+        currentUserId = currentUser?.Id;
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            bildirimSayisi = await DbCtx.Bildirimler
+                .AsNoTracking()
+                .CountAsync(b => b.AliciUserId == currentUserId && !b.OkunduMu && b.AktifMi);
+
+            sonBildirimler = await DbCtx.Bildirimler
+                .AsNoTracking()
+                .Include(b => b.KayipBildirimi)
+                .Where(b => b.AliciUserId == currentUserId && b.AktifMi)
+                .OrderByDescending(b => b.OlusturulmaTarihi)
+                .Take(5)
+                .ToListAsync();
+        }
+    }
+    string userHarf = (!string.IsNullOrWhiteSpace(currentUser?.Ad))
+        ? currentUser.Ad.Trim()[0].ToString().ToUpperInvariant()
+        : ((User.Identity?.Name?.Length ?? 0) > 0 ? User.Identity!.Name![0].ToString().ToUpperInvariant() : "V");
+    string userAdSoyad = $"{currentUser?.Ad} {currentUser?.Soyad}".Trim();
+    if (string.IsNullOrWhiteSpace(userAdSoyad)) userAdSoyad = User.Identity?.Name ?? "Vatandaş";
+}
+@{
+    // Gizli menü (ör: Profil sayfasında sol açılır menü gösterilmesin)
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    bool hideCitizenMenu = string.Equals(currentController, "Account", StringComparison.OrdinalIgnoreCase)
+                          && string.Equals(currentAction, "Profilim", StringComparison.OrdinalIgnoreCase);
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Kayıp Eşya Vatandaş Portalı</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+</head>
+
+<body class="citizen-body">
+
+    <header class="citizen-navbar">
+        <div class="container">
+
+            <div class="citizen-navbar-inner">
+
+                <a asp-controller="Vatandas"
+                   asp-action="Index"
+                   class="citizen-brand">
+
+                    <div class="citizen-brand-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+
+                    <div class="d-none d-sm-block">
+                        <strong>Arnavutköy Belediyesi</strong>
+                        <span>Kayıp Eşya Portalı</span>
+                    </div>
+
+                </a>
+
+                <form asp-controller="Home"
+                      asp-action="Arama"
+                      method="get"
+                      class="d-none d-md-flex flex-grow-1 mx-3 mx-lg-4 align-items-center justify-content-center"
+                      style="max-width:640px;">
+                    <div class="input-group shadow-sm w-100" style="border-radius:12px;">
+                        <span class="input-group-text bg-white border-end-0 py-2"
+                              style="border-radius:12px 0 0 12px;">
+                            <i class="bi bi-search text-secondary"></i>
+                        </span>
+                        <input name="ara"
+                               class="form-control border-start-0 ps-0 py-2"
+                               style="border-radius:0;"
+                               placeholder="Eşya, başvuru, marka, kategori ara..." />
+                        <button type="submit"
+                                class="btn btn-primary"
+                                style="border-radius:0 12px 12px 0;min-width:45px;">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                @if (!hideCitizenMenu)
+                {
+                    <button type="button"
+                            class="citizen-menu-button"
+                            id="citizenMenuButton">
+                        <i class="bi bi-list"></i>
+                    </button>
+
+                    <nav class="citizen-menu"
+                         id="citizenMenu">
+
+                    <a asp-controller="Vatandas"
+                       asp-action="Index">
+                        <i class="bi bi-house-door"></i>
+                        Ana Sayfa
+                    </a>
+
+                    <a asp-controller="KayipBildirimi"
+                       asp-action="Create">
+                        <i class="bi bi-megaphone"></i>
+                        Kayıp Bildir
+                    </a>
+
+                    <a asp-controller="KayipBildirimi"
+                       asp-action="Basvurularim">
+                        <i class="bi bi-list-check"></i>
+                        Başvurularım
+                    </a>
+                    <a asp-controller="Vatandas"
+                       asp-action="BulunanEsyalar">
+                        <i class="bi bi-search"></i>
+                        Eşya Sorgula
+                    </a>
+
+                    <a asp-controller="Vatandas"
+                       asp-action="Bildirimlerim">
+                        <i class="bi bi-@(bildirimSayisi > 0 ? "bell-fill text-danger" : "bell")"></i>
+                        Bildirimlerim
+                        @if (bildirimSayisi > 0)
+                        {
+                            <small class="badge bg-danger rounded-pill ms-1">
+                                @(bildirimSayisi > 99 ? "99+" : bildirimSayisi.ToString())
+                            </small>
+                        }
+                    </a>
+
+                    <a asp-controller="Account"
+                       asp-action="Profilim">
+                        <i class="bi bi-person-gear"></i>
+                        Profilim
+                    </a>
+
+                    <form asp-controller="Home"
+                          asp-action="Arama"
+                          method="get"
+                          class="mt-3 pt-3 border-top"
+                          style="padding-left:14px;padding-right:14px;">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"
+                                  style="border-radius:10px 0 0 10px;">
+                                <i class="bi bi-search text-secondary"></i>
+                            </span>
+                            <input name="ara"
+                                   class="form-control border-start-0 ps-0"
+                                   style="border-radius:0 10px 10px 0;"
+                                   placeholder="Eşya, başvuru, kişi ara..." />
+                        </div>
+                    </form>
+
+                    </nav>
+                }
+
+                <div class="citizen-user-area">
+
+                    <div class="dropdown user-dropdown" style="position:relative;">
+                        <button type="button"
+                                class="btn user-menu-trigger d-flex align-items-center gap-2"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside"
+                                aria-expanded="false"
+                                style="border:0;background:transparent;z-index:10001;">
+                            <span class="user-avatar d-inline-flex align-items-center justify-content-center fw-bold text-white rounded-circle shadow-sm"
+                                  style="width:42px;height:42px;font-size:16px;
+                                         background:linear-gradient(135deg,#0b5cff,#052a91);border:2px solid #fff;">
+                                @userHarf
+                            </span>
+                            <span class="d-none d-sm-flex flex-column align-items-start text-start">
+                                <strong class="user-adsoyad text-nowrap"
+                                        style="color:#0b5cff;font-size:13px;line-height:1.1;">
+                                    @userAdSoyad
+                                </strong>
+                                <span class="user-rol badge rounded-pill px-2"
+                                      style="background:#eef2ff;color:#0b5cff;font-size:10px;font-weight:600;">
+                                    Vatandaş
+                                </span>
+                            </span>
+                            <i class="bi bi-chevron-down d-none d-sm-inline"
+                               style="color:#94a3b8;font-size:12px;"></i>
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end border rounded-4 shadow-lg p-2 mt-2"
+                            style="min-width:260px;z-index:99999;">
+                            <li>
+                                <div class="px-3 py-2 border-bottom mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="user-avatar d-inline-flex align-items-center justify-content-center fw-bold text-white rounded-circle shadow-sm"
+                                              style="width:40px;height:40px;
+                                                     background:linear-gradient(135deg,#0b5cff,#052a91);">
+                                            @userHarf
+                                        </span>
+                                        <div class="min-w-0">
+                                            <div class="fw-semibold text-truncate" style="font-size:14px;color:#0f172a;">
+                                                @userAdSoyad
+                                            </div>
+                                            <div class="small text-truncate text-muted">
+                                                @User.Identity?.Name
+                                            </div>
+                                            <div>
+                                                <span class="badge rounded-pill px-2 mt-1"
+                                                      style="background:#eef2ff;color:#0b5cff;">
+                                                    Vatandaş Paneli
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li>
+                                <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                                   asp-controller="Account"
+                                   asp-action="Profilim">
+                                    <i class="bi bi-person-gear me-1 text-primary"></i>
+                                    <strong>Profilim</strong>
+                                    <span class="ms-auto small text-muted">Kişisel bilgiler</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                                   asp-controller="Vatandas"
+                                   asp-action="Bildirimlerim">
+                                    <i class="bi bi-bell me-1 text-danger"></i>
+                                    <strong>Bildirimlerim</strong>
+                                    @if (bildirimSayisi > 0)
+                                    {
+                                        <span class="ms-auto badge bg-danger rounded-pill">@bildirimSayisi</span>
+                                    }
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item rounded-3 d-flex align-items-center gap-2"
+                                   asp-controller="KayipBildirimi"
+                                   asp-action="Basvurularim">
+                                    <i class="bi bi-list-check me-1 text-success"></i>
+                                    <strong>Başvurularım</strong>
+                                    <span class="ms-auto small text-muted">Tüm liste</span>
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider my-2">
+                            </li>
+                            <li>
+                                <form asp-controller="Account"
+                                      asp-action="Logout"
+                                      method="post"
+                                      class="m-0 px-1">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="dropdown-item rounded-3 w-100 d-flex align-items-center gap-2"
+                                            style="color:#dc2626;font-weight:600;">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        Güvenli Çıkış
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </header>
+
+    <main class="citizen-main">
+        <div class="container">
+
+            @if (TempData["BasariliMesaj"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show"
+                     role="alert">
+
+                    <i class="bi bi-check-circle-fill me-2"></i>
+
+                    @TempData["BasariliMesaj"]
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                </div>
+            }
+
+            @if (TempData["HataMesaji"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show"
+                     role="alert">
+
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+
+                    @TempData["HataMesaji"]
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
+                </div>
+            }
+
+            @RenderBody()
+
+        </div>
+    </main>
+
+    <footer class="citizen-footer">
+        <div class="container">
+
+            <div class="citizen-footer-inner">
+
+                <span>
+                    © @DateTime.Now.Year Arnavutköy Belediyesi
+                </span>
+
+                <span>
+                    Kayıp Eşya Vatandaş Portalı
+                </span>
+
+            </div>
+
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+            const citizenMenuButton =
+                document.getElementById("citizenMenuButton");
+
+            const citizenMenu =
+                document.getElementById("citizenMenu");
+
+            if (citizenMenuButton && citizenMenu) {
+                citizenMenuButton.addEventListener("click", function() {
+                    citizenMenu.classList.toggle("citizen-menu-open");
+                });
+            }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

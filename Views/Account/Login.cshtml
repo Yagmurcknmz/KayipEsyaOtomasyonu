@@ -1,0 +1,271 @@
+﻿@model KayipEsyaOtomasyonu.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Giriş Yap - Kayıp Eşya Yönetim Sistemi</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+</head>
+
+<body class="login-page">
+
+    <div class="login-wrapper">
+
+        <div class="login-info-panel">
+
+            <div class="login-brand">
+                <div class="login-brand-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+
+                <div>
+                    <h2>Kayıp Eşya</h2>
+                    <span>Yönetim Sistemi</span>
+                </div>
+            </div>
+
+            <div class="login-info-content">
+
+                <span class="login-eyebrow">
+                    Arnavutköy Belediyesi
+                </span>
+
+                <h1>
+                    Kayıp eşya süreçlerini güvenli ve hızlı şekilde yönetin.
+                </h1>
+
+                <p>
+                    Bulunan eşyaları kaydedin, başvuruları takip edin
+                    ve teslim süreçlerini tek sistem üzerinden yönetin.
+                </p>
+
+                <div class="login-feature-list">
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Rol bazlı güvenli erişim</span>
+                    </div>
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-box-seam"></i>
+                        <span>Kayıp eşya kayıt ve takip sistemi</span>
+                    </div>
+
+                    <div class="login-feature-item">
+                        <i class="bi bi-clock-history"></i>
+                        <span>İşlem geçmişi ve raporlama</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="login-info-footer">
+                Arnavutköy Belediyesi Bilgi İşlem Sistemi
+            </div>
+
+        </div>
+
+        <div class="login-form-panel">
+
+            <div class="login-form-container">
+
+                <div class="login-form-header">
+
+                    <div class="login-mobile-logo">
+                        <i class="bi bi-search"></i>
+                    </div>
+
+                    <h3>Giriş Yap</h3>
+
+                    <p>
+                        Sisteme erişmek için kullanıcı bilgilerinizi giriniz.
+                    </p>
+
+                </div>
+
+                <form asp-controller="Account"
+                      asp-action="Login"
+                      asp-route-returnUrl="@ViewData["ReturnUrl"]"
+                      method="post">
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger">
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="Email"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group login-input-group">
+
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+
+                            <input asp-for="Email"
+                                   class="form-control"
+                                   placeholder="ornek@arnavutkoy.bel.tr"
+                                   autocomplete="email" />
+
+                        </div>
+
+                        <span asp-validation-for="Email"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label asp-for="Sifre"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group login-input-group">
+
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+
+                            <input asp-for="Sifre"
+                                   class="form-control"
+                                   placeholder="Şifrenizi giriniz"
+                                   autocomplete="current-password" />
+
+                            <button type="button"
+                                    class="btn password-toggle-button"
+                                    id="passwordToggle"
+                                    aria-label="Şifreyi göster veya gizle">
+
+                                <i class="bi bi-eye"
+                                   id="passwordToggleIcon">
+                                </i>
+
+                            </button>
+
+                        </div>
+
+                        <span asp-validation-for="Sifre"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+
+                        <div class="form-check">
+
+                            <input asp-for="BeniHatirla"
+                                   class="form-check-input" />
+
+                            <label asp-for="BeniHatirla"
+                                   class="form-check-label">
+                            </label>
+
+                        </div>
+
+                        <span class="text-muted small text-end">
+                            Şifrenizi unuttuysanız yöneticinizle iletişime geçiniz.
+                        </span>
+
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary login-submit-button">
+
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Giriş Yap
+
+                    </button>
+
+                </form>
+
+                <div class="text-center mt-4">
+
+                    <span class="text-muted">
+                        Vatandaş hesabınız yok mu?
+                    </span>
+
+                    <a asp-controller="Account"
+                       asp-action="Register"
+                       class="fw-semibold ms-1">
+                        Kayıt Ol
+                    </a>
+
+                </div>
+
+                <div class="login-test-account">
+
+                    <strong>Geliştirme hesabı</strong>
+
+                    <span>
+                        E-posta: admin@arnavutkoy.bel.tr
+                    </span>
+
+                    <span>
+                        Şifre: Admin123
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+            const passwordInput =
+                document.getElementById("Sifre");
+
+            const passwordToggle =
+                document.getElementById("passwordToggle");
+
+            const passwordToggleIcon =
+                document.getElementById("passwordToggleIcon");
+
+            if (passwordInput && passwordToggle && passwordToggleIcon) {
+                passwordToggle.addEventListener("click", function() {
+
+                    const isPassword =
+                        passwordInput.type === "password";
+
+                    passwordInput.type =
+                        isPassword ? "text" : "password";
+
+                    passwordToggleIcon.className =
+                        isPassword
+                            ? "bi bi-eye-slash"
+                            : "bi bi-eye";
+                });
+            }
+    </script>
+
+    <partial name="_ValidationScriptsPartial" />
+
+</body>
+</html>

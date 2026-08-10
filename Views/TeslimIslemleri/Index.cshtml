@@ -1,0 +1,252 @@
+@model IEnumerable<TeslimIslemi>
+@{
+    ViewData["Title"] = "Teslim İşlemleri";
+}
+@{
+    var istatistik = new
+    {
+        Toplam = Model.Count(),
+        Bugun = Model.Count(x => x.TeslimTarihi.Date == DateTime.Today),
+        Sahsen = Model.Count(x => x.TeslimSekli == "Şahsen"),
+        Posta = Model.Count(x => x.TeslimSekli != null && x.TeslimSekli.StartsWith("P"))
+    };
+}
+
+<section class="container-fluid p-4">
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-gradient bg-success text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Toplam Teslim</div>
+                        <div class="fs-2 fw-bold">@istatistik.Toplam</div>
+                    </div>
+                    <i class="bi bi-box-seam fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-gradient bg-primary text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Bugün Teslim</div>
+                        <div class="fs-2 fw-bold">@istatistik.Bugun</div>
+                    </div>
+                    <i class="bi bi-calendar-check fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-gradient bg-info text-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Şahsen Teslim</div>
+                        <div class="fs-2 fw-bold">@istatistik.Sahsen</div>
+                    </div>
+                    <i class="bi bi-person-check fs-2 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <a asp-action="YeniTeslim"
+               class="card border-0 shadow-sm rounded-4 text-white text-decoration-none"
+               style="background: linear-gradient(135deg,#ff9800,#f57c00);">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-90">Yeni Teslim</div>
+                        <div class="fs-5 fw-bold">+ Hızlı Kayıt</div>
+                    </div>
+                    <i class="bi bi-plus-circle fs-2 opacity-90"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-3">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">🔎 Arama</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text"
+                               name="ara"
+                               value="@ViewBag.Ara"
+                               class="form-control rounded-3"
+                               placeholder="Eşya adı, kişi, TCKN, telefon..." />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">📅 Başlangıç</label>
+                    <input type="date"
+                           name="tarihBas"
+                           value="@ViewBag.TarihBas"
+                           class="form-control rounded-3" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">📅 Bitiş</label>
+                    <input type="date"
+                           name="tarihBit"
+                           value="@ViewBag.TarihBit"
+                           class="form-control rounded-3" />
+                </div>
+                <div class="col-md-1 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-3 px-3 w-100">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary rounded-3 px-3 w-100">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                Teslim Listesi
+            </h5>
+            <a asp-action="YeniTeslim"
+               class="btn btn-sm btn-success rounded-3">
+                <i class="bi bi-plus-lg me-1"></i>
+                Yeni Teslim
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Başvuru / Eşya</th>
+                        <th>Teslim Alan</th>
+                        <th>Tarih / Saat</th>
+                        <th>Yer / Şekil</th>
+                        <th>Teslim Eden</th>
+                        <th class="text-center">Durum</th>
+                        <th class="pe-4 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any() == false)
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox display-5 opacity-25"></i>
+                                <div class="mt-2">Teslim kaydı bulunamadı</div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var t in Model)
+                    {
+                        var b = t.Eslesme?.KayipBildirimi;
+                        var e = t.Eslesme?.KayipEsya;
+                        <tr>
+                            <td class="ps-4 fw-semibold text-primary">#@t.Id</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-semibold text-dark">
+                                        <i class="bi bi-clipboard text-danger me-1"></i>
+                                        @b?.EsyaAdi <small class="badge bg-danger-subtle text-danger-emphasis rounded-pill ms-1">@b?.Kategori?.Ad</small>
+                                    </span>
+                                    <small class="text-muted">
+                                        <i class="bi bi-box text-success me-1"></i>
+                                        @e?.EsyaAdi <small class="text-success-emphasis">(#@e?.Id)</small>
+                                    </small>
+                                    @if (b?.Vatandas != null)
+                                    {
+                                        <small class="text-muted mt-1">
+                                            <i class="bi bi-person me-1"></i>
+                                            @b.Vatandas.Ad @b.Vatandas.Soyad
+                                        </small>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@t.TeslimAlanKisi</div>
+                                @if (!string.IsNullOrWhiteSpace(t.TcKimlikNo))
+                                {
+                                    <small class="text-muted"><i class="bi bi-card-text me-1"></i>TCKN: @t.TcKimlikNo</small>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(t.IletisimTelefonu))
+                                {
+                                    <div><small class="text-muted"><i class="bi bi-telephone me-1"></i>@t.IletisimTelefonu</small></div>
+                                }
+                            </td>
+                            <td>
+                                <div class="fw-semibold">
+                                    <i class="bi bi-calendar3 me-1 text-primary"></i>
+                                    @t.TeslimTarihi.ToString("dd.MM.yyyy")
+                                </div>
+                                @if (t.TeslimSaati.HasValue)
+                                {
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>@t.TeslimSaati.Value.ToString(@"hh\:mm")
+                                    </small>
+                                }
+                            </td>
+                            <td>
+                                <div>
+                                    <i class="bi bi-geo-alt me-1 text-warning"></i>
+                                    @t.TeslimYeri
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(t.TeslimSekli))
+                                {
+                                    <small class="badge bg-info-subtle text-info-emphasis rounded-pill mt-1">
+                                        <i class="bi bi-truck me-1"></i>@t.TeslimSekli
+                                    </small>
+                                }
+                            </td>
+                            <td>
+                                <div class="fw-semibold">
+                                    @if (t.TeslimEden != null)
+                                    {
+                                        @($"{t.TeslimEden.Ad} {t.TeslimEden.Soyad}")
+                                    }
+                                    else { <span class="text-muted">—</span> }
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (t.ImzaOnayi)
+                                {
+                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">
+                                        <i class="bi bi-check2-all me-1"></i>
+                                        İmzalı
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis px-3 py-2">
+                                        <i class="bi bi-exclamation me-1"></i>
+                                        İmza Yok
+                                    </span>
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                <a asp-action="Details"
+                                   asp-route-id="@t.Id"
+                                   class="btn btn-sm btn-outline-primary rounded-3 me-1"
+                                   title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form asp-action="Sil"
+                                      asp-route-id="@t.Id"
+                                      method="post"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Bu teslim kaydını silmek istediğinize emin misiniz?');">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger rounded-3"
+                                            title="Sil">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

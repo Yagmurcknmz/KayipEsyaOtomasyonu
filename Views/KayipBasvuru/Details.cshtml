@@ -1,0 +1,297 @@
+@model KayipEsyaOtomasyonu.Models.KayipBildirimi
+
+@{
+    ViewData["Title"] = "Başvuru Detayı - " + Model.BasvuruNo;
+    var durumlar = ViewBag.Durumlar as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var eslesenEsyalar = ViewBag.EslesenEsyalar as IEnumerable<KayipEsyaOtomasyonu.Models.KayipEsya>
+        ?? Enumerable.Empty<KayipEsyaOtomasyonu.Models.KayipEsya>();
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 small">
+                <li class="breadcrumb-item">
+                    <a asp-controller="Home" asp-action="Index">Ana Sayfa</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a asp-controller="KayipBasvuru" asp-action="Index">Kayıp Başvuruları</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.BasvuruNo</li>
+            </ol>
+        </nav>
+        <h2>Başvuru Detayı: <small class="text-primary">@Model.BasvuruNo</small></h2>
+        <p class="text-muted mb-0">
+            @(Model.Vatandas == null
+                ? ""
+                : $"{Model.Vatandas.Ad} {Model.Vatandas.Soyad} tarafından · " +
+                  $"{Model.BasvuruTarihi.ToString("dd.MM.yyyy HH:mm")} oluşturuldu.")
+        </p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-xl-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-1">
+                    <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                    Başvuru Bilgileri
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Başvuru No</label>
+                        <strong class="fs-5 text-primary">@Model.BasvuruNo</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Başvuru Tarihi</label>
+                        <strong>@Model.BasvuruTarihi.ToString("dd.MM.yyyy HH:mm")</strong>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Eşya Adı</label>
+                        <strong>@Model.EsyaAdi</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Kategori</label>
+                        <strong>@(Model.Kategori?.Ad ?? "-")</strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="small text-muted mb-1 d-block">Marka</label>
+                        <strong>@(string.IsNullOrWhiteSpace(Model.Marka) ? "-" : Model.Marka)</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small text-muted mb-1 d-block">Model</label>
+                        <strong>@(string.IsNullOrWhiteSpace(Model.Model) ? "-" : Model.Model)</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small text-muted mb-1 d-block">Renk</label>
+                        <strong>@(string.IsNullOrWhiteSpace(Model.Renk) ? "-" : Model.Renk)</strong>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Kayıp Tarihi</label>
+                        <strong>@Model.KayipTarihi.ToString("dd.MM.yyyy")</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small text-muted mb-1 d-block">Kayıp Yeri</label>
+                        <strong>@(string.IsNullOrWhiteSpace(Model.KayipYeri) ? "-" : Model.KayipYeri)</strong>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.AyirtEdiciOzellik))
+                    {
+                        <div class="col-12">
+                            <label class="small text-muted mb-1 d-block">Ayırt Edici Özellikler</label>
+                            <p class="mb-0 p-3 bg-light rounded-3">
+                                @Model.AyirtEdiciOzellik
+                            </p>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Aciklama))
+                    {
+                        <div class="col-12">
+                            <label class="small text-muted mb-1 d-block">Açıklama</label>
+                            <p class="mb-0 p-3 bg-light rounded-3">
+                                @Model.Aciklama
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-1">
+                    <i class="bi bi-people-fill text-info me-2"></i>
+                    Muhtemel Eşleşen Eşyalar
+                </h5>
+                <small class="text-muted">
+                    Otomatik önerilen @eslesenEsyalar.Count() kayıt
+                </small>
+            </div>
+
+            <div class="card-body">
+                @if (!eslesenEsyalar.Any())
+                {
+                    <div class="empty-state py-4">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <h5>Eşleşen kayıt bulunamadı</h5>
+                        <p>Bu başvuruyla eşleşebilecek kayıp eşya şu an sistemde mevcut değil.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th>Bulunan Eşya</th>
+                                    <th>Kategori</th>
+                                    <th>Marka</th>
+                                    <th>Bulunma Yeri / Tarihi</th>
+                                    <th>Raf No</th>
+                                    <th>Durum</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var esya in eslesenEsyalar)
+                                {
+                                    <tr>
+                                        <td><strong>@esya.EsyaAdi</strong></td>
+                                        <td>@(esya.Kategori?.Ad ?? "-")</td>
+                                        <td>@(string.IsNullOrWhiteSpace(esya.Marka) ? "-" : esya.Marka)</td>
+                                        <td>
+                                            <div>@(string.IsNullOrWhiteSpace(esya.BulunmaYeri) ? "-" : esya.BulunmaYeri)</div>
+                                            <small class="text-muted">@esya.BulunmaTarihi.ToString("dd.MM.yyyy")</small>
+                                        </td>
+                                        <td>@(string.IsNullOrWhiteSpace(esya.RafNo) ? "-" : esya.RafNo)</td>
+                                        <td>
+                                            <span class="badge bg-primary">@esya.Durum</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a asp-controller="KayipEsya"
+                                               asp-action="Details"
+                                               asp-route-id="@esya.Id"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-xl-4">
+
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-1">
+                    <i class="bi bi-gear-wide-connected me-2"></i>
+                    Durum Yönetimi
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-controller="KayipBasvuru"
+                      asp-action="DurumDegistir"
+                      method="post">
+
+                    <input type="hidden"
+                           name="id"
+                           value="@Model.Id" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mevcut Durum</label>
+                        <select name="durum"
+                                class="form-select form-select-lg">
+                            @foreach (var durum in durumlar)
+                            {
+                                <option value="@durum"
+                                        selected="@(Model.Durum == durum)">
+                                    @durum
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            Admin Notu
+                            <small class="text-muted">(Zaman damgası ile kaydedilecektir)</small>
+                        </label>
+                        <textarea name="adminNotu"
+                                  rows="4"
+                                  class="form-control"
+                                  placeholder="İşlemle ilgili notunuzu buraya yazın... (ör: Vatandaş arandı, geleceğini söyledi)"></textarea>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary w-100">
+                        <i class="bi bi-save me-2"></i>
+                        Durumu Güncelle
+                    </button>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-1">
+                    <i class="bi bi-person-badge-fill text-success me-2"></i>
+                    Başvuran Vatandaş
+                </h5>
+            </div>
+            <div class="card-body">
+
+                @if (Model.Vatandas == null)
+                {
+                    <p class="text-muted mb-0">Kullanıcı bulunamadı.</p>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div style="width:58px;height:58px;border-radius:50%;display:grid;place-items:center;
+                                    background:#dcfce7;color:#166534;font-size:24px;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">@Model.Vatandas.Ad @Model.Vatandas.Soyad</h5>
+                            <small class="text-muted">
+                                @(Model.Vatandas.AktifMi ? "Aktif Hesap" : "Pasif Hesap")
+                            </small>
+                        </div>
+                    </div>
+
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">E-Posta</span>
+                            <strong>@Model.Vatandas.Email</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Telefon</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.Vatandas.PhoneNumber) ? "-" : Model.Vatandas.PhoneNumber)</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Kayıt Tarihi</span>
+                            <strong>@Model.Vatandas.KayitTarihi.ToString("dd.MM.yyyy")</strong>
+                        </li>
+                    </ul>
+                }
+
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.AdminNotu))
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-1">
+                        <i class="bi bi-journal-text text-warning me-2"></i>
+                        Geçmiş Notlar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <pre style="white-space:pre-wrap;font-family:inherit;font-size:0.875rem;"
+                         class="mb-0 p-3 bg-light border rounded-3">@Model.AdminNotu</pre>
+                </div>
+            </div>
+        }
+
+    </div>
+
+</div>

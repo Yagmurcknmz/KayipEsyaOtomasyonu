@@ -1,0 +1,236 @@
+@model ApplicationUser
+@{
+    ViewData["Title"] = "Kullanıcı Detayı";
+    var rol = ViewBag.Rol as string;
+    int toplamBasvuru = ViewBag.ToplamBasvuru ?? 0;
+    int toplamTeslim = ViewBag.ToplamTeslim ?? 0;
+    var basvurular = ViewBag.AktifBasvurular as IEnumerable<KayipBildirimi>
+        ?? Enumerable.Empty<KayipBildirimi>();
+}
+
+<section class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-person-badge me-2 text-primary"></i>
+                Kullanıcı Detayı
+            </h4>
+            <small class="text-muted">
+                Kayıt: @Model.KayitTarihi.ToString("dd.MM.yyyy HH:mm")
+            </small>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Kullanici"
+               asp-action="Index"
+               class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i>
+                Listeye Dön
+            </a>
+            <a asp-controller="Kullanici"
+               asp-action="Duzenle"
+               asp-route-id="@Model.Id"
+               class="btn btn-warning rounded-3">
+                <i class="bi bi-pencil-square me-1"></i>
+                Düzenle
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white"
+                 style="background: linear-gradient(135deg,#1976d2,#0d47a1);">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Kullanıcı Tipi</div>
+                        <div class="fs-3 fw-bold">@rol</div>
+                    </div>
+                    <i class="bi bi-shield-check fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white"
+                 style="background: linear-gradient(135deg,#c62828,#8e0000);">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Toplam Başvuru</div>
+                        <div class="fs-3 fw-bold">@toplamBasvuru</div>
+                    </div>
+                    <i class="bi bi-clipboard-check fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white"
+                 style="background: linear-gradient(135deg,#2e7d32,#1b5e20);">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small opacity-75">Teslim Edilen</div>
+                        <div class="fs-3 fw-bold">@toplamTeslim</div>
+                    </div>
+                    <i class="bi bi-box-seam fs-1 opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold small text-muted">Durum</div>
+                        @if (Model.AktifMi)
+                        {
+                            <span class="badge bg-success rounded-pill px-4 py-2 fs-5 mt-1">AKTİF</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger rounded-pill px-4 py-2 fs-5 mt-1">PASİF</span>
+                        }
+                    </div>
+                    <i class="bi bi-@(Model.AktifMi ? "check-circle-fill text-success" : "x-circle-fill text-danger") fs-1"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header text-white py-4 px-4 text-center border-0"
+                     style="background: linear-gradient(135deg,#1976d2,#0d47a1);">
+                    <div class="p-4 rounded-circle bg-white bg-opacity-20 d-inline-flex mb-3">
+                        <i class="bi bi-person-fill display-3"></i>
+                    </div>
+                    <h4 class="fw-bold mb-0">@Model.Ad @Model.Soyad</h4>
+                    @if (!string.IsNullOrWhiteSpace(Model.Email))
+                    {
+                        <small class="opacity-90">@Model.Email</small>
+                    }
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between px-4 py-3 border-0 border-bottom">
+                        <span class="text-muted small"><i class="bi bi-person-vcard me-1 text-danger"></i>TC Kimlik No</span>
+                        <span class="fw-bold">
+                            @if (!string.IsNullOrWhiteSpace(Model.TcKimlikNo))
+                            {
+                                <code>@Model.TcKimlikNo</code>
+                            }
+                            else { <span class="text-muted">—</span> }
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-4 py-3 border-0 border-bottom">
+                        <span class="text-muted small"><i class="bi bi-telephone me-1 text-success"></i>Telefon</span>
+                        <span class="fw-semibold">
+                            @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+                            { @Model.PhoneNumber }
+                            else { <span class="text-muted">—</span> }
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-4 py-3 border-0 border-bottom">
+                        <span class="text-muted small"><i class="bi bi-envelope me-1 text-primary"></i>E-Posta</span>
+                        <span class="fw-semibold small">@(Model.Email ?? "—")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Birim) || !string.IsNullOrWhiteSpace(Model.SicilNo))
+                    {
+                        <div class="list-group-item d-flex justify-content-between px-4 py-3 border-0 border-bottom">
+                            <span class="text-muted small"><i class="bi bi-building me-1"></i>Birim</span>
+                            <div class="text-end">
+                                @if (!string.IsNullOrWhiteSpace(Model.Birim))
+                                { <div class="fw-semibold">@Model.Birim</div> }
+                                @if (!string.IsNullOrWhiteSpace(Model.SicilNo))
+                                { <small class="text-muted">Sicil: @Model.SicilNo</small> }
+                            </div>
+                        </div>
+                    }
+                    <div class="list-group-item d-flex justify-content-between px-4 py-3 border-0 border-bottom">
+                        <span class="text-muted small"><i class="bi bi-geo-alt me-1 text-warning"></i>İlçe / Mahalle</span>
+                        <span class="fw-semibold small">
+                            @if (!string.IsNullOrWhiteSpace(Model.IlceMahalle))
+                            { @Model.IlceMahalle }
+                            else { <span class="text-muted">—</span> }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Adres))
+                    {
+                        <div class="list-group-item px-4 py-3 border-0">
+                            <div class="text-muted small mb-1"><i class="bi bi-signpost me-1"></i>Açık Adres</div>
+                            <div class="small">@Model.Adres</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-clipboard-data me-2 text-danger"></i>
+                        Kayıp Eşya Başvuruları
+                    </h6>
+                    <a asp-controller="KayipBasvuru"
+                       asp-action="Index"
+                       class="btn btn-sm btn-outline-primary rounded-3">
+                        Tüm Başvurular
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Eşya</th>
+                                <th>Kategori</th>
+                                <th>Kayıp Tarih</th>
+                                <th>Durum</th>
+                                <th class="pe-4 text-end">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!basvurular.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox display-5 opacity-25"></i>
+                                        <div class="mt-2">Henüz başvuru bulunmuyor</div>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var b in basvurular)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-primary">#@b.Id</td>
+                                    <td class="fw-semibold">@b.EsyaAdi</td>
+                                    <td><small class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">@b.Kategori?.Ad</small></td>
+                                    <td><small class="text-muted">@b.KayipTarihi.ToString("dd.MM.yyyy")</small></td>
+                                    <td>
+                                        @if (b.Durum == "Teslim Edildi")
+                                        {
+                                            <span class="badge rounded-pill bg-success text-white px-3">@b.Durum</span>
+                                        }
+                                        else if (b.Durum == "Eşleşme Bulundu")
+                                        {
+                                            <span class="badge rounded-pill bg-info text-white px-3">@b.Durum</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge rounded-pill bg-secondary px-3">@b.Durum</span>
+                                        }
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="KayipBasvuru"
+                                           asp-action="Details"
+                                           asp-route-id="@b.Id"
+                                           class="btn btn-sm btn-outline-primary rounded-3">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

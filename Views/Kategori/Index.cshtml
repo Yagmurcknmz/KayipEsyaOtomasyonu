@@ -1,0 +1,161 @@
+@model IEnumerable<KayipEsyaOtomasyonu.Models.Kategori>
+
+@{
+    ViewData["Title"] = "Kategori Yönetimi";
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h2>Kategori Yönetimi</h2>
+        <p class="text-muted mb-0">
+            Kayıp eşya kayıtlarında kullanılacak kategorileri yönetin.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <form asp-controller="Kategori"
+              asp-action="TumunuYenile"
+              method="post"
+              onsubmit="return confirm('Kullanılmayan kategoriler silinecek, standart 12 kategori yüklenecek. Devam etmek istiyor musunuz?');">
+            <input type="hidden"
+                   name="__RequestVerificationToken"
+                   value="@Context.RequestServices
+                        .GetRequiredService<
+                            Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+                        .GetAndStoreTokens(Context).RequestToken" />
+            <button type="submit"
+                    class="btn btn-outline-warning">
+                <i class="bi bi-arrow-repeat me-2"></i>
+                Kategorileri Sıfırla &amp; Yenile
+            </button>
+        </form>
+
+        <a asp-controller="Kategori"
+           asp-action="Create"
+           class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>
+            Yeni Kategori
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Kategoriler</h5>
+            <small class="text-muted">
+                Toplam @Model.Count() kategori bulunuyor.
+            </small>
+        </div>
+    </div>
+
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-tags"></i>
+                </div>
+
+                <h5>Henüz kategori bulunmuyor</h5>
+
+                <p>
+                    Yeni kategori eklemek için üstteki butonu kullanabilirsiniz.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Kategori</th>
+                            <th>Açıklama</th>
+                            <th>Durum</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var kategori in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="category-icon">
+                                            <i class="bi bi-tag-fill"></i>
+                                        </div>
+
+                                        <strong>@kategori.Ad</strong>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(kategori.Aciklama)
+                                        ? "-"
+                                        : kategori.Aciklama)
+                                </td>
+
+                                <td>
+                                    @if (kategori.AktifMi)
+                                    {
+                                        <span class="badge bg-success">
+                                            Aktif
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            Pasif
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @kategori.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="Kategori"
+                                       asp-action="Edit"
+                                       asp-route-id="@kategori.Id"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil-square me-1"></i>
+                                        Düzenle
+                                    </a>
+
+                                    <form asp-controller="Kategori"
+                                          asp-action="DurumDegistir"
+                                          asp-route-id="@kategori.Id"
+                                          method="post"
+                                          class="d-inline">
+                                        <button type="submit"
+                                                class="btn btn-sm @(kategori.AktifMi ? "btn-outline-secondary" : "btn-outline-success") me-1">
+                                            <i class="bi @(kategori.AktifMi ? "bi-pause-circle" : "bi-play-circle") me-1"></i>
+                                            @(kategori.AktifMi ? "Pasif" : "Aktif")
+                                        </button>
+                                    </form>
+
+                                    <form asp-controller="Kategori"
+                                          asp-action="Sil"
+                                          asp-route-id="@kategori.Id"
+                                          method="post"
+                                          class="d-inline"
+                                          onsubmit="return confirm('@kategori.Ad silinsin mi? Bu kayıt tarafından kullanılıyorsa silinmeyecektir.');">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash me-1"></i>
+                                            Sil
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

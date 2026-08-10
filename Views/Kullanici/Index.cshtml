@@ -1,0 +1,197 @@
+@model IEnumerable<KayipEsyaOtomasyonu.ViewModels.KullaniciViewModel>
+
+@{
+    ViewData["Title"] = "Kullanıcılar";
+    var tumRoller = ViewBag.TumRoller as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h2>Kullanıcı Yönetimi</h2>
+        <p class="text-muted mb-0">
+            Sistem kullanıcılarını listele, rol atama ve aktif/pasif işlemleri.
+        </p>
+    </div>
+
+    <a asp-controller="Kullanici"
+       asp-action="PersonelEkle"
+       class="btn btn-primary">
+        <i class="bi bi-person-plus-fill me-2"></i>
+        Yeni Personel Ekle
+    </a>
+</div>
+
+<div class="card">
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="table-light">
+                        <th>Kullanıcı</th>
+                        <th>TC Kimlik</th>
+                        <th>Telefon</th>
+                        <th>E-Posta</th>
+                        <th>Rol</th>
+                        <th>Kayıt Tarihi</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlemler</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var kullanici in Model)
+                    {
+                        <tr class="@(kullanici.AktifMi ? "" : "opacity-75")">
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div style="width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+                                                @(kullanici.AktifMi ? "background:#e0f2fe;color:#0369a1;" : "background:#f1f5f9;color:#64748b;")">
+                                        <i class="bi bi-person-fill fs-5"></i>
+                                    </div>
+                                    <strong>@kullanici.AdSoyad</strong>
+                                </div>
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(kullanici.TcKimlikNo))
+                                {
+                                    <code class="text-dark small">@kullanici.TcKimlikNo</code>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">—</small>
+                                }
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(kullanici.Telefon))
+                                {
+                                    <small><i class="bi bi-telephone me-1 text-success"></i>@kullanici.Telefon</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">—</small>
+                                }
+                            </td>
+
+                            <td>
+                                <small class="text-muted">@kullanici.Email</small>
+                            </td>
+
+                            <td>
+                                <form asp-controller="Kullanici"
+                                      asp-action="RolDegistir"
+                                      method="post"
+                                      class="d-flex gap-2 align-items-center"
+                                      onsubmit="return confirm('@kullanici.AdSoyad adlı kullanıcının rolünü değiştirmek istediğinize emin misiniz?');">
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@kullanici.Id" />
+
+                                    <select name="yeniRol"
+                                            class="form-select form-select-sm"
+                                            style="min-width:150px;">
+
+                                        @foreach (var rol in tumRoller)
+                                        {
+                                            <option value="@rol"
+                                                    selected="@(kullanici.Rol == rol)">
+                                                @rol
+                                            </option>
+                                        }
+                                    </select>
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Rolü güncelle">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+
+                                </form>
+                            </td>
+
+                            <td>
+                                <small>@kullanici.KayitTarihi.ToString("dd.MM.yyyy")</small>
+                            </td>
+
+                            <td>
+                                @if (kullanici.AktifMi)
+                                {
+                                    <span class="badge bg-success">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Pasif</span>
+                                }
+                            </td>
+
+                            <td class="text-end">
+                                <a asp-controller="Kullanici"
+                                   asp-action="Detay"
+                                   asp-route-id="@kullanici.Id"
+                                   class="btn btn-sm btn-outline-primary me-1"
+                                   title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-controller="Kullanici"
+                                   asp-action="Duzenle"
+                                   asp-route-id="@kullanici.Id"
+                                   class="btn btn-sm btn-outline-warning me-1"
+                                   title="Düzenle">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                @if (kullanici.AktifMi)
+                                {
+                                    <form asp-controller="Kullanici"
+                                          asp-action="Pasiflestir"
+                                          method="post"
+                                          onsubmit="return confirm('@kullanici.AdSoyad adlı kullanıcıyı pasifleştirmek istediğinize emin misiniz? Bu kullanıcı sisteme giriş yapamayacaktır.');"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@kullanici.Id" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-person-x-fill"></i>
+                                        </button>
+
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Kullanici"
+                                          asp-action="Aktiflestir"
+                                          method="post"
+                                          onsubmit="return confirm('@kullanici.AdSoyad adlı kullanıcıyı aktifleştirmek istediğinize emin misiniz?');"
+                                          class="d-inline">
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@kullanici.Id" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check-fill"></i>
+                                        </button>
+
+                                    </form>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,50 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace KayipEsyaOtomasyonu.ViewModels
+{
+    public class KayipBildirimiOlusturViewModel
+    {
+        [Required(ErrorMessage = "Eşya adı zorunludur.")]
+        [StringLength(
+            150,
+            ErrorMessage = "Eşya adı en fazla 150 karakter olabilir.")]
+        [Display(Name = "Eşya Adı")]
+        public string EsyaAdi { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Kategori seçimi zorunludur.")]
+        [Display(Name = "Kategori")]
+        public int? KategoriId { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Marka")]
+        public string? Marka { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Model")]
+        public string? Model { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "Renk")]
+        public string? Renk { get; set; }
+
+        [Required(ErrorMessage = "Kayıp tarihi zorunludur.")]
+        [DataType(DataType.Date)]
+        [Display(Name = "Kayıp Tarihi")]
+        public DateTime KayipTarihi { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Kayıp yeri zorunludur.")]
+        [StringLength(
+            200,
+            ErrorMessage = "Kayıp yeri en fazla 200 karakter olabilir.")]
+        [Display(Name = "Kayıp Yeri")]
+        public string KayipYeri { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        [Display(Name = "Ayırt Edici Özellik")]
+        public string? AyirtEdiciOzellik { get; set; }
+
+        [StringLength(1000)]
+        [Display(Name = "Açıklama")]
+        public string? Aciklama { get; set; }
+    }
+}

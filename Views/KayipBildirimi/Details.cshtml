@@ -1,0 +1,128 @@
+@model KayipEsyaOtomasyonu.Models.KayipBildirimi
+
+@{
+    ViewData["Title"] = "Başvuru Detayı";
+    Layout = "~/Views/Shared/_VatandasLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-xl-10">
+
+        <div class="card shadow-sm border-0">
+
+            <div class="card-header bg-white py-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1">Başvuru Detayı</h3>
+                    <small class="text-muted">
+                        Başvuru Numarası: <strong>@Model.BasvuruNo</strong>
+                    </small>
+                </div>
+
+                <span class="badge bg-info text-dark fs-6">
+                    @Model.Durum
+                </span>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <span class="detail-label">Eşya Adı</span>
+                            <strong>@Model.EsyaAdi</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <span class="detail-label">Kategori</span>
+                            <strong>@(Model.Kategori?.Ad ?? "-")</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="detail-item">
+                            <span class="detail-label">Marka</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.Marka) ? "-" : Model.Marka)</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="detail-item">
+                            <span class="detail-label">Model</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.Model) ? "-" : Model.Model)</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="detail-item">
+                            <span class="detail-label">Renk</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.Renk) ? "-" : Model.Renk)</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <span class="detail-label">Kayıp Tarihi</span>
+                            <strong>@Model.KayipTarihi.ToString("dd.MM.yyyy")</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <span class="detail-label">Başvuru Tarihi</span>
+                            <strong>@Model.BasvuruTarihi.ToString("dd.MM.yyyy HH:mm")</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="detail-item">
+                            <span class="detail-label">Kayıp Yeri</span>
+                            <strong>@Model.KayipYeri</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <span class="detail-label">Ayırt Edici Özellik</span>
+                            <strong>
+                                @(string.IsNullOrWhiteSpace(Model.AyirtEdiciOzellik)
+                                    ? "-"
+                                    : Model.AyirtEdiciOzellik)
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <span class="detail-label">Açıklama</span>
+                            <strong>
+                                @(string.IsNullOrWhiteSpace(Model.Aciklama)
+                                    ? "-"
+                                    : Model.Aciklama)
+                            </strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a asp-controller="KayipBildirimi"
+                       asp-action="Basvurularim"
+                       class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Başvurularıma Dön
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,340 @@
+@model KayipEsyaOtomasyonu.ViewModels.ProfilDuzenleViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Profilim";
+    var rol = ViewBag.Rol as string ?? "Kullanıcı";
+    bool rolVatandas = string.Equals(rol, "Vatandaş", StringComparison.OrdinalIgnoreCase)
+                       || string.Equals(rol, "Vatandas", StringComparison.OrdinalIgnoreCase)
+                       || (User.Identity?.IsAuthenticated == true && User.IsInRole("Vatandas"));
+    Layout = rolVatandas ? "~/Views/Shared/_VatandasLayout.cshtml" : "~/Views/Shared/_Layout.cshtml";
+    var kayitTarihi = (DateTime?)ViewBag.KayitTarihi;
+    string adSoyad = $"{Model.Ad} {Model.Soyad}".Trim();
+    string ilkHarf = string.IsNullOrWhiteSpace(adSoyad) ? "U" : adSoyad.Trim()[0].ToString().ToUpperInvariant();
+
+    var rolRenk = rol.ToLower() switch
+    {
+        "admin" => "bg-danger",
+        "personel" => "bg-primary",
+        "vatandaş" or "vatandas" => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    string anaSayfaLink = rol.ToLower() switch
+    {
+        "admin" or "personel" => Url.Action("Index", "Home") ?? "",
+        _ => Url.Action("Index", "Vatandas") ?? ""
+    };
+}
+
+<section class="p-4" style="min-height:calc(100vh - 140px);">
+
+    <form asp-controller="Account" asp-action="Profilim" method="post" novalidate>
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-xl-11">
+
+                <div class="card border-0 rounded-5 overflow-hidden shadow-sm text-white hero-gradient mb-4"
+                     style="background: radial-gradient(circle at top right, rgba(255,255,255,.22), transparent 45%),
+                            linear-gradient(135deg,#0b5cff 0%,#083bc7 55%,#052a91 100%);">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row align-items-center g-4">
+                            <div class="col-md-7">
+                                <div class="d-flex gap-4 align-items-center flex-wrap">
+                                    <div class="rounded-circle hero-avatar-solid text-primary d-flex align-items-center justify-content-center flex-shrink-0 shadow-lg"
+                                         style="width:96px;height:96px;font-size:38px;font-weight:800;">
+                                        @ilkHarf
+                                    </div>
+                                    <div>
+                                        <span class="badge @rolRenk rounded-pill px-3 py-1 mb-2 fw-semibold text-white"
+                                              style="box-shadow: 0 6px 18px -8px rgba(15,23,42,.3);">
+                                            <i class="bi bi-shield-check me-1"></i>@rol.ToUpper()
+                                        </span>
+                                        <h2 class="fw-bold mb-1 lh-sm">@adSoyad</h2>
+                                        <div class="opacity-90 small mb-2">
+                                            <i class="bi bi-envelope-fill me-1"></i>@Model.Email
+                                        </div>
+                                        @if (kayitTarihi.HasValue)
+                                        {
+                                            <div class="small opacity-80">
+                                                <i class="bi bi-calendar3 me-1"></i>Hesap Oluşturma: @kayitTarihi.Value.ToString("dd MMMM yyyy HH:mm")
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                                    @if (!string.IsNullOrWhiteSpace(Model.TcKimlikNo))
+                                    {
+                                        <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                            <i class="bi bi-person-vcard me-1 text-primary"></i>TCKN: <strong>@Model.TcKimlikNo</strong>
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.Telefon))
+                                    {
+                                        <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                            <i class="bi bi-telephone me-1 text-primary"></i>@Model.Telefon
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.SicilNo))
+                                    {
+                                        <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                            <i class="bi bi-person-badge me-1 text-primary"></i>Sicil: <strong>@Model.SicilNo</strong>
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.Birim))
+                                    {
+                                        <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                            <i class="bi bi-buildings me-1 text-primary"></i>@Model.Birim
+                                        </span>
+                                    }
+                                </div>
+                                <div class="d-flex justify-content-md-end mt-3 gap-2">
+                                    <a href="@anaSayfaLink" class="btn bg-white text-primary rounded-4 fw-semibold px-4 shadow-sm">
+                                        <i class="bi bi-house-door me-1"></i>Ana Sayfa
+                                    </a>
+                                    <a href="#bilgiler" class="btn rounded-4 fw-semibold px-4 hero-btn-outline">
+                                        <i class="bi bi-pencil-square me-1"></i>Bilgileri Düzenle
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger rounded-4 border-0 mb-4"
+                     style="border-left:5px solid #dc2626;">
+                </div>
+
+                @{
+                    var basariMesaji = (TempData["Mesaj"] as string) ?? (TempData["BasariliMesaj"] as string);
+                }
+                @if (!string.IsNullOrWhiteSpace(basariMesaji))
+                {
+                    <div class="alert alert-success rounded-4 border-0 mb-4 d-flex align-items-center gap-2"
+                         style="border-left:5px solid #16a34a;">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <span>@basariMesaji</span>
+                    </div>
+                }
+
+                <div class="row g-4 justify-content-center">
+
+                    <div class="col-xl-10" id="bilgiler" style="max-width:1080px;">
+
+                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 transition-hover">
+                            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="bi bi-person-gear me-2 text-primary"></i>
+                                    Kişisel Bilgiler
+                                </h6>
+                                <small class="text-muted"><i class="bi bi-pen"></i> Düzenleme Modu</small>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="Ad" class="form-label fw-semibold">Ad *</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                            <input asp-for="Ad" class="form-control rounded-end-3" placeholder="Adınız" />
+                                        </div>
+                                        <span asp-validation-for="Ad" class="text-danger small d-block mt-1"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="Soyad" class="form-label fw-semibold">Soyad *</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                            <input asp-for="Soyad" class="form-control rounded-end-3" placeholder="Soyadınız" />
+                                        </div>
+                                        <span asp-validation-for="Soyad" class="text-danger small d-block mt-1"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="TcKimlikNo" class="form-label fw-semibold">TC Kimlik No</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-person-vcard-fill"></i></span>
+                                            <input asp-for="TcKimlikNo"
+                                                   class="form-control rounded-end-3"
+                                                   maxlength="11"
+                                                   placeholder="11 haneli T.C. Kimlik No" />
+                                        </div>
+                                        <span asp-validation-for="TcKimlikNo" class="text-danger small d-block mt-1"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Email" class="form-label fw-semibold">E-Posta (Değiştirilemez)</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-envelope-fill text-muted"></i></span>
+                                            <input asp-for="Email" class="form-control rounded-end-3 bg-light" readonly />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Telefon" class="form-label fw-semibold">Telefon</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                            <input asp-for="Telefon"
+                                                   class="form-control rounded-end-3"
+                                                   placeholder="05XX XXX XX XX" />
+                                        </div>
+                                        <span asp-validation-for="Telefon" class="text-danger small d-block mt-1"></span>
+                                    </div>
+
+                                    @if (rol.Equals("admin", StringComparison.OrdinalIgnoreCase) || rol.Equals("personel", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <div class="col-md-6">
+                                            <label asp-for="SicilNo" class="form-label fw-semibold">Sicil No</label>
+                                            <div class="input-group input-group-lg">
+                                                <span class="input-group-text"><i class="bi bi-person-badge-fill"></i></span>
+                                                <input asp-for="SicilNo" class="form-control rounded-end-3" placeholder="Personel Sicil No" />
+                                            </div>
+                                            <span asp-validation-for="SicilNo" class="text-danger small d-block mt-1"></span>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Birim" class="form-label fw-semibold">Birim</label>
+                                            <div class="input-group input-group-lg">
+                                                <span class="input-group-text"><i class="bi bi-buildings-fill"></i></span>
+                                                <input asp-for="Birim" class="form-control rounded-end-3" placeholder="Örn: İnsan Kaynakları" />
+                                            </div>
+                                            <span asp-validation-for="Birim" class="text-danger small d-block mt-1"></span>
+                                        </div>
+                                    }
+
+                                    <div class="col-md-6">
+                                        <label asp-for="IlceMahalle" class="form-label fw-semibold">İlçe / Mahalle</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+                                            <input asp-for="IlceMahalle"
+                                                   class="form-control rounded-end-3"
+                                                   placeholder="Örn: Arnavutköy / Atatürk Mah." />
+                                        </div>
+                                        <span asp-validation-for="IlceMahalle" class="text-danger small d-block mt-1"></span>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label asp-for="Adres" class="form-label fw-semibold">Açık Adres</label>
+                                        <div class="card border border-secondary-subtle rounded-4 overflow-hidden">
+                                            <div class="card-header bg-white border-bottom px-3 py-2 d-flex align-items-center gap-2">
+                                                <i class="bi bi-house-door text-primary"></i>
+                                                <small class="fw-semibold">Tam adresinizi yazın</small>
+                                            </div>
+                                            <textarea asp-for="Adres"
+                                                      rows="3"
+                                                      class="form-control border-0 rounded-0 p-3"
+                                                      style="min-height:90px;"
+                                                      placeholder="Cadde, sokak, apartman no, daire no ve tarifi yazılabilir."></textarea>
+                                        </div>
+                                        <span asp-validation-for="Adres" class="text-danger small d-block mt-1"></span>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 overflow-hidden transition-hover">
+                            <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="bi bi-shield-lock-fill me-2 text-danger"></i>
+                                    Şifre Değiştir
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Boş bırakırsanız şifreniz DEĞİŞMEZ
+                                </small>
+                            </div>
+                            <div class="card-body p-4">
+
+                                <div class="alert alert-warning border-0 rounded-4 mb-4 d-flex gap-2 align-items-start"
+                                     style="border-left:5px solid #f59e0b;">
+                                    <i class="bi bi-exclamation-triangle-fill fs-4 text-warning-emphasis flex-shrink-0 mt-1"></i>
+                                    <div class="small">
+                                        <strong class="text-warning-emphasis">Güvenlik Önerisi:</strong>
+                                        Şifreniz en az 6 karakter, bir büyük harf, bir küçük harf ve bir rakam içermelidir. Güçlü bir şifre seçin.
+                                    </div>
+                                </div>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label asp-for="YeniSifre" class="form-label fw-semibold">Yeni Şifre</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                                            <input asp-for="YeniSifre" type="password"
+                                                   class="form-control rounded-end-3"
+                                                   placeholder="En az 6 karakter"
+                                                   autocomplete="new-password" />
+                                        </div>
+                                        <span asp-validation-for="YeniSifre" class="text-danger small d-block mt-1"></span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="YeniSifreTekrar" class="form-label fw-semibold">Yeni Şifre (Tekrar)</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                                            <input asp-for="YeniSifreTekrar" type="password"
+                                                   class="form-control rounded-end-3"
+                                                   placeholder="Şifrenizi tekrar yazın"
+                                                   autocomplete="new-password" />
+                                        </div>
+                                        <span asp-validation-for="YeniSifreTekrar" class="text-danger small d-block mt-1"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4 p-4 rounded-4 bg-light shadow-sm">
+                            <div class="small text-muted d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-success fs-4"></i>
+                                <div>
+                                    <div class="fw-semibold text-dark">Güncelleme işlemi güvenlidir</div>
+                                    <div>Tüm bilgiler sunucuda şifreli olarak saklanır.</div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="@anaSayfaLink" class="btn btn-lg btn-outline-secondary rounded-4 px-4">
+                                    <i class="bi bi-arrow-left me-1"></i>
+                                    İptal
+                                </a>
+                                <button type="submit"
+                                        class="btn btn-lg text-white rounded-4 px-5 shadow-sm transition-hover"
+                                        style="background:linear-gradient(135deg,#0b5cff,#052a91);border:0;">
+                                    <i class="bi bi-floppy-fill me-2"></i>
+                                    Değişiklikleri Kaydet
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </form>
+</section>
+
+<style>
+    .transition-hover {
+        transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+
+    .transition-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px -10px rgba(11, 92, 255, .25) !important;
+        filter: brightness(1.02);
+    }
+
+    .input-group-text {
+        background: #f8fafc !important;
+        border-right: 0 !important;
+    }
+
+    .form-control, .form-select {
+        border-left: 0 !important;
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

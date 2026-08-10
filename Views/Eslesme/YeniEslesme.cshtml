@@ -1,0 +1,131 @@
+@model KayipEsyaOtomasyonu.Models.Eslesme
+
+@{
+    ViewData["Title"] = "Manuel Eşleştirme";
+}
+
+<div class="row justify-content-center">
+    <div class="col-xxl-9 col-xl-11">
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+
+            <div class="card-header bg-white py-3 border-0 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-3" style="width:52px;height:52px;">
+                        <i class="bi bi-hand-index-thumb fs-3 text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold">Manuel Eşleştirme</h4>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Otomatik eşleşme çıkmayan kayıtlar için buradan manuel bir eşleşme tanımlayabilirsiniz.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 bg-light bg-opacity-25">
+
+                <form asp-controller="Eslesme" asp-action="YeniEslesme" method="post">
+
+                    <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 mb-3 d-none"></div>
+
+                    <div class="card border rounded-3 shadow-sm mb-4">
+                        <div class="card-header bg-white py-2 border-bottom pb-3">
+                            <h6 class="mb-0 fw-semibold text-primary d-flex align-items-center">
+                                <i class="bi bi-link-45deg me-2 fs-5"></i>
+                                Eşleştirilecek Kayıtlar
+                            </h6>
+                        </div>
+                        <div class="card-body bg-white">
+
+                            <div class="row g-3">
+
+                                <div class="col-md-6">
+                                    <label asp-for="KayipBildirimiId" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                        Kayıp Başvurusu <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0 align-items-start" style="padding-top:.75rem;">
+                                            <i class="bi bi-person-arms-up text-danger"></i>
+                                        </span>
+                                        <select asp-for="KayipBildirimiId" size="10" class="form-select border-start-0 ps-0" style="min-height:150px;">
+                                            <option value="">-- Bir Başvuru Seçin --</option>
+                                            @if (ViewBag.Basvurular != null)
+                                            {
+                                                @foreach (var b in (dynamic)ViewBag.Basvurular)
+                                                {
+                                                    <option value="@b.Id">@b.Baslik</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="KayipBildirimiId" class="text-danger small d-block mt-1"></span>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label asp-for="KayipEsyaId" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                        Bulunan Eşya <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0 align-items-start" style="padding-top:.75rem;">
+                                            <i class="bi bi-search-heart text-success"></i>
+                                        </span>
+                                        <select asp-for="KayipEsyaId" size="10" class="form-select border-start-0 ps-0" style="min-height:150px;">
+                                            <option value="">-- Bir Eşya Seçin --</option>
+                                            @if (ViewBag.Esyalar != null)
+                                            {
+                                                @foreach (var k in (dynamic)ViewBag.Esyalar)
+                                                {
+                                                    <option value="@k.Id">@k.Baslik</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="KayipEsyaId" class="text-danger small d-block mt-1"></span>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label asp-for="Skor" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                        Eşleşme Skoru (%)
+                                    </label>
+                                    <input asp-for="Skor" type="number" min="0" max="100" class="form-control" />
+                                    <small class="text-muted d-block mt-1">Manuel eşleşmelerde varsayılan 100'dür.</small>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <label asp-for="EslesmeDetay" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                        Eşleşme Notu (Neden bu ikisi?)
+                                    </label>
+                                    <input asp-for="EslesmeDetay" class="form-control" placeholder="Manuel eşleştirme nedeni (önerilir)" />
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top pt-4">
+                        <a asp-controller="Eslesme"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary px-4 rounded-3 shadow-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            İptal / Listeye Dön
+                        </a>
+                        <button type="submit"
+                                class="btn btn-primary px-5 rounded-3 shadow-sm">
+                            <i class="bi bi-link-45deg me-2"></i>
+                            Eşleşmeyi Kaydet
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

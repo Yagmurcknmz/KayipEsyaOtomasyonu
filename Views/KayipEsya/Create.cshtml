@@ -1,0 +1,372 @@
+@model KayipEsyaOtomasyonu.Models.KayipEsya
+
+@{
+    ViewData["Title"] = "Yeni Kayıp Eşya";
+}
+
+<div class="row justify-content-center">
+    <div class="col-xxl-11 col-xl-12">
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+
+            <div class="card-header bg-white py-3 border-0 border-bottom">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-3" style="width:52px;height:52px;">
+                            <i class="bi bi-box-seam fs-3 text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Yeni Kayıp Eşya Kaydı</h4>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Bulunan eşyanın bilgilerini eksiksiz ve doğru giriniz.
+                                Kırmızı <span class="text-danger">*</span> ile işaretli alanlar zorunludur.
+                            </small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            @DateTime.Now.ToString("dd MMMM yyyy dddd")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 bg-light bg-opacity-25">
+
+                <form asp-controller="KayipEsya"
+                      asp-action="Create"
+                      method="post"
+                      novalidate>
+
+                    <div asp-validation-summary="All"
+                         class="alert alert-danger border-0 rounded-3 d-none">
+                    </div>
+
+                    <div class="row g-4 mb-4">
+
+                        <!-- #################### SOL KOLON: GENEL BİLGİLER #################### -->
+                        <div class="col-lg-7">
+
+                            <div class="card border h-100 rounded-3 shadow-sm">
+                                <div class="card-header bg-white py-2 border-bottom-0 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold text-primary d-flex align-items-center">
+                                        <i class="bi bi-card-heading me-2 fs-5"></i>
+                                        Genel Bilgiler
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white">
+
+                                    <div class="row g-3">
+
+                                        <div class="col-12">
+                                            <label asp-for="EsyaAdi" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Eşya Adı<span class="text-danger ms-1">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-tag text-secondary"></i>
+                                                </span>
+                                                <input asp-for="EsyaAdi"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Siyah deri sırt çantası" />
+                                            </div>
+                                            <span asp-validation-for="EsyaAdi"
+                                                  class="text-danger small d-block mt-1"></span>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label asp-for="KategoriId" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Kategori<span class="text-danger ms-1">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0 align-items-start" style="padding-top:.85rem;">
+                                                    <i class="bi bi-funnel text-secondary"></i>
+                                                </span>
+                                                <select asp-for="KategoriId"
+                                                        asp-items="ViewBag.Kategoriler"
+                                                        size="12"
+                                                        class="form-select border-start-0 ps-0"
+                                                        style="min-height:48px;">
+                                                    <option value="">Kategori seçiniz (12 kategori)</option>
+                                                </select>
+                                            </div>
+                                            <small class="text-muted d-block mt-1">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Yukarı/aşağı ok tuşları ile gezebilir veya tıklayıp seçebilirsiniz.
+                                            </small>
+                                            <span asp-validation-for="KategoriId"
+                                                  class="text-danger small d-block mt-1"></span>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Marka" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Marka
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-bookmark-star text-secondary"></i>
+                                                </span>
+                                                <input asp-for="Marka"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Samsung" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Model" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Model
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-braces text-secondary"></i>
+                                                </span>
+                                                <input asp-for="Model"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Galaxy S24" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Renk" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Renk
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-palette text-secondary"></i>
+                                                </span>
+                                                <input asp-for="Renk"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Siyah" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="SeriNo" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Seri / IMEI Numarası
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-upc-scan text-secondary"></i>
+                                                </span>
+                                                <input asp-for="SeriNo"
+                                                       class="form-control border-start-0 ps-0 font-monospace"
+                                                       placeholder="Varsa seri / IMEI no" />
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- #################### SAĞ KOLON: KONUM & DURUM #################### -->
+                        <div class="col-lg-5">
+
+                            <div class="card border h-100 rounded-3 shadow-sm">
+                                <div class="card-header bg-white py-2 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold text-success d-flex align-items-center">
+                                        <i class="bi bi-geo-alt me-2 fs-5"></i>
+                                        Bulunma Konumu &amp; Durum
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white">
+
+                                    <div class="row g-3">
+
+                                        <div class="col-md-6">
+                                            <label asp-for="BulunmaTarihi" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Bulunma Tarihi<span class="text-danger ms-1">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-calendar3 text-secondary"></i>
+                                                </span>
+                                                <input asp-for="BulunmaTarihi"
+                                                       type="date"
+                                                       class="form-control border-start-0 ps-0" />
+                                            </div>
+                                            <span asp-validation-for="BulunmaTarihi"
+                                                  class="text-danger small d-block mt-1"></span>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Durum" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Durum<span class="text-danger ms-1">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-signpost text-secondary"></i>
+                                                </span>
+                                                <select asp-for="Durum"
+                                                        class="form-select border-start-0 ps-0">
+                                                    <option value="Yeni Kayıt">🆕 Yeni Kayıt</option>
+                                                    <option value="Depoda">📦 Depoda</option>
+                                                    <option value="Eşleşme Bulundu">🔗 Eşleşme Bulundu</option>
+                                                    <option value="Vatandaşa Haber Verildi">📞 Vatandaşa Haber</option>
+                                                    <option value="Teslim Bekliyor">⏳ Teslim Bekliyor</option>
+                                                    <option value="Teslim Edildi">✅ Teslim Edildi</option>
+                                                    <option value="Arşivlendi">📚 Arşivlendi</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label asp-for="BulunmaYeri" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Bulunma Yeri
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-geo text-secondary"></i>
+                                                </span>
+                                                <input asp-for="BulunmaYeri"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Arnavutköy Meydanı, tramvay durağı" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Mahalle" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Mahalle
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-signpost-split text-secondary"></i>
+                                                </span>
+                                                <input asp-for="Mahalle"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Merkez Mahallesi" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Birim" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Teslim Alan Birim
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-building text-secondary"></i>
+                                                </span>
+                                                <input asp-for="Birim"
+                                                       class="form-control border-start-0 ps-0"
+                                                       placeholder="Örneğin: Zabıta Müdürlüğü" />
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label asp-for="RafNo" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                                Raf / Dolap Numarası
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-grid-3x3-gap text-secondary"></i>
+                                                </span>
+                                                <input asp-for="RafNo"
+                                                       class="form-control border-start-0 ps-0 font-monospace"
+                                                       placeholder="Örneğin: A-12 / Koli 5" />
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- #################### AÇIKLAMALAR BÖLÜMÜ #################### -->
+                    <div class="row g-4 mb-4">
+
+                        <div class="col-md-6">
+                            <div class="card border rounded-3 shadow-sm">
+                                <div class="card-header bg-white py-2 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold text-warning d-flex align-items-center">
+                                        <i class="bi bi-stars me-2 fs-5"></i>
+                                        Ayırt Edici Özellikler
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white">
+                                    <label asp-for="AyirtEdiciOzellik" class="form-label small text-muted fw-medium mb-1">
+                                        Eşyayı diğer eşyalardan ayıran özel detaylar (çizik, leke, desen, yazı vb.)
+                                    </label>
+                                    <textarea asp-for="AyirtEdiciOzellik"
+                                              class="form-control rounded-2"
+                                              rows="5"
+                                              placeholder="Örneğin: Kilit mekanizmasında çatlak var, fermuar kırık, içine yazılmış isim vb."></textarea>
+                                    <div class="mt-2 small text-muted">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        En fazla 500 karakter girebilirsiniz.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card border rounded-3 shadow-sm">
+                                <div class="card-header bg-white py-2 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold text-indigo d-flex align-items-center" style="color:#4f46e5;">
+                                        <i class="bi bi-journal-text me-2 fs-5"></i>
+                                        Açıklama
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white">
+                                    <label asp-for="Aciklama" class="form-label small text-muted fw-medium mb-1">
+                                        Eşya hakkında genel not, teslim şekli, bulunan kişi bilgisi vb.
+                                    </label>
+                                    <textarea asp-for="Aciklama"
+                                              class="form-control rounded-2"
+                                              rows="5"
+                                              placeholder="Eşya ve olay hakkında ek bilgiler buraya yazılabilir."></textarea>
+                                    <div class="mt-2 small text-muted">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        En fazla 1000 karakter girebilirsiniz.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- #################### FORM FOOTER (BUTONLAR) #################### -->
+                    <div class="card-footer bg-white border-0 border-top rounded-4 mt-2 pt-4 px-0 d-flex justify-content-sm-end justify-content-between align-items-center flex-wrap gap-2">
+
+                        <div class="small text-muted order-2 order-sm-1">
+                            <i class="bi bi-person-check-fill me-1"></i>
+                            Kayıt oluşturan: <strong>@User.Identity?.Name</strong>
+                        </div>
+
+                        <div class="d-flex gap-2 order-1 order-sm-2">
+                            <a asp-controller="KayipEsya"
+                               asp-action="Index"
+                               class="btn btn-outline-secondary px-4 rounded-3 shadow-sm">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Listeye Dön
+                            </a>
+                            <button type="reset"
+                                    class="btn btn-outline-warning px-4 rounded-3 shadow-sm">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                Sıfırla
+                            </button>
+                            <button type="submit"
+                                    class="btn btn-primary px-5 rounded-3 shadow btn-lg-sm">
+                                <i class="bi bi-save2-fill me-2"></i>
+                                Kaydı Kaydet
+                            </button>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

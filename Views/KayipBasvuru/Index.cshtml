@@ -1,0 +1,202 @@
+@model IEnumerable<KayipEsyaOtomasyonu.Models.KayipBildirimi>
+
+@{
+    ViewData["Title"] = "Kayıp Başvuruları";
+}
+
+<div class="dashboard-header mb-4">
+    <div>
+        <h2>Kayıp Başvuruları</h2>
+        <p class="text-muted mb-0">
+            Vatandaşlar tarafından oluşturulan kayıp bildirimlerini inceleyin.
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form asp-controller="KayipBasvuru"
+              asp-action="Index"
+              method="get"
+              class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-5">
+                <label class="form-label fw-semibold">Ara</label>
+                <input type="text"
+                       name="arama"
+                       value="@ViewBag.Arama"
+                       class="form-control"
+                       placeholder="Başvuru no, eşya adı, vatandaş, marka, kayıp yeri..." />
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label class="form-label fw-semibold">Kategori</label>
+                <select name="kategoriId"
+                        class="form-select"
+                        asp-items="ViewBag.Kategoriler">
+                    <option value="">Tüm Kategoriler</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2">
+                <label class="form-label fw-semibold">Durum</label>
+                <select name="durum"
+                        class="form-select"
+                        asp-items="ViewBag.Durumlar">
+                    <option value="">Tüm Durumlar</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2 d-grid">
+                <button type="submit"
+                        class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>
+                    Filtrele
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Vatandaş Başvuruları</h5>
+            <small class="text-muted">
+                Toplam @Model.Count() başvuru bulundu.
+            </small>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+
+                <h5>Henüz başvuru bulunmuyor</h5>
+
+                <p>
+                    Vatandaşların gönderdiği başvurular burada görüntülenecektir.
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="table-light">
+                            <th>Başvuru No</th>
+                            <th>Vatandaş</th>
+                            <th>Eşya</th>
+                            <th>Kategori</th>
+                            <th>Kayıp Tarihi</th>
+                            <th>Durum</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var basvuru in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">@basvuru.BasvuruNo</strong>
+                                </td>
+
+                                <td>
+                                    @if (basvuru.Vatandas == null)
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <strong>@basvuru.Vatandas.Ad @basvuru.Vatandas.Soyad</strong>
+                                            <div>
+                                                <small class="text-muted">@basvuru.Vatandas.Email</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div><strong>@basvuru.EsyaAdi</strong></div>
+                                    @if (!string.IsNullOrWhiteSpace(basvuru.Marka) ||
+                                        !string.IsNullOrWhiteSpace(basvuru.Renk))
+                                    {
+                                        <small class="text-muted">
+                                            @(!string.IsNullOrWhiteSpace(basvuru.Marka) ? basvuru.Marka : "")
+                                            @(!string.IsNullOrWhiteSpace(basvuru.Marka) && !string.IsNullOrWhiteSpace(basvuru.Renk) ? " · " : "")
+                                            @(!string.IsNullOrWhiteSpace(basvuru.Renk) ? basvuru.Renk : "")
+                                        </small>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        @(basvuru.Kategori?.Ad ?? "-")
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <small>@basvuru.KayipTarihi.ToString("dd.MM.yyyy")</small>
+                                </td>
+
+                                <td>
+                                    @switch (basvuru.Durum)
+                                    {
+                                        case "Yeni Başvuru":
+                                            <span class="badge bg-primary">@basvuru.Durum</span>
+                                            break;
+                                        case "İnceleniyor":
+                                            <span class="badge bg-secondary">@basvuru.Durum</span>
+                                            break;
+                                        case "Eşleşme Aranıyor":
+                                            <span class="badge bg-warning text-dark">@basvuru.Durum</span>
+                                            break;
+                                        case "Eşleşme Bulundu":
+                                            <span class="badge bg-info text-dark">@basvuru.Durum</span>
+                                            break;
+                                        case "Vatandaşa Haber Verildi":
+                                            <span class="badge" style="background:#8b5cf6;color:#fff;">@basvuru.Durum</span>
+                                            break;
+                                        case "Teslim Edildi":
+                                            <span class="badge bg-success">@basvuru.Durum</span>
+                                            break;
+                                        case "Çözüldü":
+                                            <span class="badge bg-success">@basvuru.Durum</span>
+                                            break;
+                                        case "Pasif":
+                                            <span class="badge bg-danger">@basvuru.Durum</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@basvuru.Durum</span>
+                                            break;
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    <a asp-controller="KayipBasvuru"
+                                       asp-action="Details"
+                                       asp-route-id="@basvuru.Id"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye me-1"></i>
+                                        Detay
+                                    </a>
+                                </td>
+
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>

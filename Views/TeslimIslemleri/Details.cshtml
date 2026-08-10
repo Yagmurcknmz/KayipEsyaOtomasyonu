@@ -1,0 +1,254 @@
+@model TeslimIslemi
+@{
+    ViewData["Title"] = "Teslim Detayı - Tutanak";
+    var b = Model.Eslesme?.KayipBildirimi;
+    var e = Model.Eslesme?.KayipEsya;
+}
+
+<section class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-receipt text-primary me-2"></i>
+                Teslim Tutanığı #@Model.Id
+            </h4>
+            <small class="text-muted">
+                Oluşturulma: @Model.OlusturulmaTarihi.ToString("dd.MM.yyyy HH:mm")
+            </small>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+            </a>
+            <button type="button"
+                    onclick="window.print()"
+                    class="btn btn-outline-primary rounded-3">
+                <i class="bi bi-printer me-1"></i>Yazdır
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden border-2 border-primary-subtle"
+                 id="print-area">
+                <div class="card-header bg-primary text-white py-3 px-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="mb-1 fw-bold">
+                                <i class="bi bi-building me-2"></i>
+                                ARNAVUTKÖY BELEDİYESİ
+                            </h5>
+                            <div class="small opacity-90">Kayıp Eşya Müdürlüğü - Teslim Alma Tutanığı</div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="fw-bold">TUTANAK NO</div>
+                            <div class="fs-3">#TES-@Model.Id.ToString("D6")</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-danger-subtle rounded-3">
+                                <h6 class="fw-bold text-danger mb-2">
+                                    <i class="bi bi-clipboard me-1"></i>Kayıp Başvurusu
+                                </h6>
+                                <dl class="row mb-0 small">
+                                    <dt class="col-4 text-muted">Başvuru No</dt>
+                                    <dd class="col-8 fw-semibold">#@b?.Id</dd>
+
+                                    <dt class="col-4 text-muted">Eşya</dt>
+                                    <dd class="col-8 fw-semibold">@b?.EsyaAdi</dd>
+
+                                    <dt class="col-4 text-muted">Kategori</dt>
+                                    <dd class="col-8">@b?.Kategori?.Ad</dd>
+
+                                    <dt class="col-4 text-muted">Marka</dt>
+                                    <dd class="col-8">@b?.Marka</dd>
+
+                                    <dt class="col-4 text-muted">Renk</dt>
+                                    <dd class="col-8">@b?.Renk</dd>
+
+                                    <dt class="col-4 text-muted">Vatandaş</dt>
+                                    <dd class="col-8 fw-semibold">@b?.Vatandas?.Ad @b?.Vatandas?.Soyad</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-success-subtle rounded-3">
+                                <h6 class="fw-bold text-success mb-2">
+                                    <i class="bi bi-box me-1"></i>Bulunan Eşya
+                                </h6>
+                                <dl class="row mb-0 small">
+                                    <dt class="col-4 text-muted">Kayıt No</dt>
+                                    <dd class="col-8 fw-semibold">#@e?.Id</dd>
+
+                                    <dt class="col-4 text-muted">Eşya</dt>
+                                    <dd class="col-8 fw-semibold">@e?.EsyaAdi</dd>
+
+                                    <dt class="col-4 text-muted">Kategori</dt>
+                                    <dd class="col-8">@e?.Kategori?.Ad</dd>
+
+                                    <dt class="col-4 text-muted">Marka</dt>
+                                    <dd class="col-8">@e?.Marka</dd>
+
+                                    <dt class="col-4 text-muted">Renk</dt>
+                                    <dd class="col-8">@e?.Renk</dd>
+
+                                    <dt class="col-4 text-muted">Seri No</dt>
+                                    <dd class="col-8">@e?.SeriNo</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-top pt-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-people text-primary me-2"></i>
+                            Teslim Bilgileri
+                        </h6>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <dl class="row mb-0 small">
+                                    <dt class="col-5 text-muted">Teslim Alan Kişi</dt>
+                                    <dd class="col-7 fw-semibold">@Model.TeslimAlanKisi</dd>
+
+                                    <dt class="col-5 text-muted">TC Kimlik No</dt>
+                                    <dd class="col-7">@Model.TcKimlikNo</dd>
+
+                                    <dt class="col-5 text-muted">İletişim</dt>
+                                    <dd class="col-7">@Model.IletisimTelefonu</dd>
+
+                                    <dt class="col-5 text-muted">Teslim Eden</dt>
+                                    <dd class="col-7 fw-semibold">
+                                        @if (Model.TeslimEden != null)
+                                        {
+                                            @($"{Model.TeslimEden.Ad} {Model.TeslimEden.Soyad}")
+                                        }
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row mb-0 small">
+                                    <dt class="col-5 text-muted">Teslim Tarihi</dt>
+                                    <dd class="col-7 fw-semibold">@Model.TeslimTarihi.ToString("dd.MM.yyyy")</dd>
+
+                                    <dt class="col-5 text-muted">Teslim Saati</dt>
+                                    <dd class="col-7">
+                                        @if (Model.TeslimSaati.HasValue)
+                                        {
+                                            @Model.TeslimSaati.Value.ToString(@"hh\:mm")
+                                        }
+                                    </dd>
+
+                                    <dt class="col-5 text-muted">Teslim Yeri</dt>
+                                    <dd class="col-7">@Model.TeslimYeri</dd>
+
+                                    <dt class="col-5 text-muted">Teslim Şekli</dt>
+                                    <dd class="col-7">
+                                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">
+                                            @Model.TeslimSekli
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.EkNotlar))
+                    {
+                        <div class="border-top mt-4 pt-4">
+                            <h6 class="fw-bold mb-2"><i class="bi bi-sticky text-warning me-2"></i>Ek Notlar</h6>
+                            <p class="bg-light p-3 rounded-3 mb-0 small">@Model.EkNotlar</p>
+                        </div>
+                    }
+
+                    <div class="row g-4 mt-4 pt-4 border-top">
+                        <div class="col-md-6 text-center">
+                            <div class="border rounded-3 p-4 bg-light-subtle">
+                                <div class="small text-muted mb-4">Teslim Eden Personel / İmza</div>
+                                <div style="height:60px; border-bottom: 1px dashed #888;"></div>
+                                <div class="fw-semibold mt-2">
+                                    @if (Model.TeslimEden != null)
+                                    {
+                                        @($"{Model.TeslimEden.Ad} {Model.TeslimEden.Soyad}")
+                                    }
+                                </div>
+                                <div class="small text-muted">
+                                    @(Model.ImzaOnayi ? "✓ İmza Onaylı" : "İmza alınmadı")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="border rounded-3 p-4 bg-light-subtle">
+                                <div class="small text-muted mb-4">Teslim Alan Kişi / İmza</div>
+                                <div style="height:60px; border-bottom: 1px dashed #888;"></div>
+                                <div class="fw-semibold mt-2">@Model.TeslimAlanKisi</div>
+                                <div class="small text-muted">TCKN: @Model.TcKimlikNo</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light border-0 text-center py-3 small text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Bu tutanağın bir nüshası teslim alan kişiye verilmiştir.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="p-3 rounded-4 bg-success-subtle text-success-emphasis">
+                            <i class="bi bi-patch-check fs-3"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-5">Teslim Onaylandı</div>
+                            <div class="small text-muted">#@Model.Id - Tutanak</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted small">Eşleşme SKORU</span>
+                        <span class="fw-bold">
+                            @if (Model.Eslesme?.Skor >= 70)
+                            {
+                                <span class="text-success">⭐ @Model.Eslesme.Skor</span>
+                            }
+                            else
+                            {
+                                <span>@Model.Eslesme?.Skor</span>
+                            }
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted small">Eşleşme Türü</span>
+                        <span class="fw-semibold">
+                            @(Model.Eslesme?.Tur == EslesmeTuru.Otomatik ? "🪄 Otomatik" : "👆 Manuel")
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted small">İşlem Tarihi</span>
+                        <span class="fw-semibold small">
+                            @Model.TeslimTarihi.ToString("dd.MM.yyyy")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-action="Sil"
+                  asp-route-id="@Model.Id"
+                  method="post"
+                  onsubmit="return confirm('Bu teslim kaydını silmek istediğinize emin misiniz?');">
+                <button type="submit"
+                        class="btn btn-outline-danger rounded-4 w-100 mb-2">
+                    <i class="bi bi-trash me-1"></i>
+                    Teslim Kaydını Sil
+                </button>
+            </form>
+        </div>
+    </div>
+</section>

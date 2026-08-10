@@ -1,0 +1,326 @@
+@model KayipEsyaOtomasyonu.Models.Eslesme
+
+@{
+    ViewData["Title"] = "Eşleşme Detayı";
+    string DurumYazdir(EslesmeDurumu d) => d switch
+    {
+        EslesmeDurumu.Beklemede => "Beklemede",
+        EslesmeDurumu.Onaylandi => "Onaylandı",
+        EslesmeDurumu.Reddedildi => "Reddedildi",
+        EslesmeDurumu.TeslimEdildi => "Teslim Edildi",
+        _ => d.ToString()
+    };
+    string DurumRengi(EslesmeDurumu d) => d switch
+    {
+        EslesmeDurumu.Beklemede => "bg-warning bg-opacity-10 text-warning border-warning",
+        EslesmeDurumu.Onaylandi => "bg-success bg-opacity-10 text-success border-success",
+        EslesmeDurumu.Reddedildi => "bg-danger bg-opacity-10 text-danger border-danger",
+        EslesmeDurumu.TeslimEdildi => "bg-primary bg-opacity-10 text-primary border-primary",
+        _ => "bg-light text-dark"
+    };
+    string SkorRengi(int s) => s switch
+    {
+        >= 80 => "text-success",
+        >= 55 => "text-info",
+        >= 35 => "text-warning",
+        _ => "text-danger"
+    };
+    string SkorBar(int s) => s switch
+    {
+        >= 80 => "bg-success",
+        >= 55 => "bg-info",
+        >= 35 => "bg-warning",
+        _ => "bg-danger"
+    };
+}
+
+<div class="row justify-content-center">
+    <div class="col-xxl-11 col-xl-12">
+
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+
+            <div class="card-header bg-white py-3 border-0 border-bottom">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center justify-content-center bg-indigo rounded-3 text-white"
+                             style="width:52px;height:52px;background:#4f46e5;">
+                            <i class="bi bi-arrows-collapse fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Eşleşme Detayı #@Model.Id</h4>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                @(Model.Tur == EslesmeTuru.Otomatik ? "Otomatik tarama sonucu eşleşti." : "Admin tarafından manuel eşleştirildi.")
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge rounded-pill @DurumRengi(Model.Durum) border border-opacity-25 px-3 py-2">
+                            @DurumYazdir(Model.Durum)
+                        </span>
+                        <span class="badge rounded-pill @(Model.Tur == EslesmeTuru.Otomatik ? "bg-info bg-opacity-10 text-info border-info" : "bg-secondary bg-opacity-10 text-secondary border-secondary") border border-opacity-25 px-3 py-2">
+                            @(Model.Tur == EslesmeTuru.Otomatik ? "Otomatik" : "Manuel")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 bg-light bg-opacity-25">
+
+                <!-- Eşleşme Skoru -->
+                <div class="card border rounded-3 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                            <div>
+                                <h6 class="mb-1 fw-semibold small text-uppercase text-muted">Eşleşme Skoru</h6>
+                                <div class="h2 mb-0 fw-bold @SkorRengi(Model.Skor)">
+                                    %@Model.Skor
+                                    <small class="h6 text-muted fw-normal ms-2">(@(
+                                        Model.Skor >= 80 ? "Mükemmel Eşleşme" :
+                                        Model.Skor >= 55 ? "İyi Eşleşme" :
+                                        Model.Skor >= 35 ? "Kısmi Eşleşme" : "Zayıf Eşleşme"
+                                    ))</small>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 mx-4" style="max-width:600px;">
+                                <div class="progress" style="height:20px;border-radius:999px;">
+                                    <div class="progress-bar @SkorBar(Model.Skor)"
+                                         role="progressbar"
+                                         style="width:@Model.Skor%;border-radius:999px;"
+                                         aria-valuenow="@Model.Skor"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.EslesmeDetay))
+                        {
+                            <div class="mt-3 small bg-light p-2 rounded-2 border">
+                                <i class="bi bi-lightbulb me-1 text-warning"></i>
+                                <strong>Eşleşme Detayı:</strong>
+                                <span class="text-muted">@Model.EslesmeDetay</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- 2 Kolonlu: Başvuru ↔ Eşya -->
+                <div class="row g-4 mb-4">
+
+                    <div class="col-lg-6">
+                        <div class="card border rounded-3 shadow-sm h-100">
+                            <div class="card-header bg-white py-2 border-bottom pb-3">
+                                <h6 class="mb-0 fw-semibold text-danger d-flex align-items-center">
+                                    <i class="bi bi-person-arms-up me-2 fs-5"></i>
+                                    Kayıp Başvurusu #@Model.KayipBildirimi?.Id
+                                </h6>
+                            </div>
+                            <div class="card-body bg-white">
+                                @if (Model.KayipBildirimi == null)
+                                {
+                                    <div class="text-muted">Başvuru bilgisi bulunamadı.</div>
+                                }
+                                else
+                                {
+                                    <table class="table table-borderless small mb-0 align-middle">
+                                        <tbody>
+                                            <tr><th class="w-35 text-muted">Başvuran Kişi</th><td><strong>@Model.KayipBildirimi.Vatandas?.Ad @Model.KayipBildirimi.Vatandas?.Soyad</strong></td></tr>
+                                            <tr><th class="text-muted"><i class="bi bi-person-vcard me-1 text-danger"></i>TC Kimlik No</th><td>
+                                                @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Vatandas?.TcKimlikNo))
+                                                { <code>@Model.KayipBildirimi.Vatandas.TcKimlikNo</code> }
+                                                else { <span class="text-muted">—</span> }
+                                            </td></tr>
+                                            <tr><th class="text-muted"><i class="bi bi-envelope me-1"></i>E-posta</th><td>@Model.KayipBildirimi.Vatandas?.Email</td></tr>
+                                            <tr><th class="text-muted"><i class="bi bi-telephone me-1 text-success"></i>Telefon</th><td>@Model.KayipBildirimi.Vatandas?.PhoneNumber</td></tr>
+                                            @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Vatandas?.IlceMahalle) ||
+                                                  !string.IsNullOrWhiteSpace(Model.KayipBildirimi.Vatandas?.Adres))
+                                            {
+                                                <tr><th class="text-muted"><i class="bi bi-geo-alt me-1 text-warning"></i>Adres</th><td>
+                                                    <small>
+                                                        @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Vatandas.IlceMahalle))
+                                                        { <strong class="d-block">@Model.KayipBildirimi.Vatandas.IlceMahalle</strong> }
+                                                        @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Vatandas.Adres))
+                                                        { <span class="text-muted">@Model.KayipBildirimi.Vatandas.Adres</span> }
+                                                    </small>
+                                                </td></tr>
+                                            }
+                                            <tr><th class="text-muted">Eşya Adı</th><td class="fw-semibold">@Model.KayipBildirimi.EsyaAdi</td></tr>
+                                            <tr><th class="text-muted">Kategori</th><td>@Model.KayipBildirimi.Kategori?.Ad</td></tr>
+                                            <tr><th class="text-muted">Marka / Model / Renk</th><td>@Model.KayipBildirimi.Marka / @Model.KayipBildirimi.Model / @Model.KayipBildirimi.Renk</td></tr>
+                                            <tr><th class="text-muted">Kayıp Tarihi</th><td>@Model.KayipBildirimi!.KayipTarihi.ToString("dd.MM.yyyy")</td></tr>
+                                            <tr><th class="text-muted">Kayıp Yeri</th><td>@Model.KayipBildirimi.KayipYeri</td></tr>
+                                            <tr><th class="text-muted">Başvuru Durumu</th><td>@Model.KayipBildirimi.Durum</td></tr>
+                                            @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.AyirtEdiciOzellik))
+                                            {
+                                                <tr><th class="text-muted">Ayırt Edici Özellik</th><td>@Model.KayipBildirimi.AyirtEdiciOzellik</td></tr>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Aciklama))
+                                            {
+                                                <tr><th class="text-muted">Açıklama</th><td>@Model.KayipBildirimi.Aciklama</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                    <a asp-controller="KayipBasvuru"
+                                       asp-action="Details"
+                                       asp-route-id="@Model.KayipBildirimi.Id"
+                                       class="btn btn-sm btn-outline-danger mt-2 rounded-2">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                                        Başvuru Detayına Git
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border rounded-3 shadow-sm h-100">
+                            <div class="card-header bg-white py-2 border-bottom pb-3">
+                                <h6 class="mb-0 fw-semibold text-success d-flex align-items-center">
+                                    <i class="bi bi-search-heart me-2 fs-5"></i>
+                                    Bulunan Eşya #@Model.KayipEsya?.Id
+                                </h6>
+                            </div>
+                            <div class="card-body bg-white">
+                                @if (Model.KayipEsya == null)
+                                {
+                                    <div class="text-muted">Eşya bilgisi bulunamadı.</div>
+                                }
+                                else
+                                {
+                                    <table class="table table-borderless small mb-0 align-middle">
+                                        <tbody>
+                                            <tr><th class="w-35 text-muted">Eşya Adı</th><td class="fw-semibold">@Model.KayipEsya.EsyaAdi</td></tr>
+                                            <tr><th class="text-muted">Kategori</th><td>@Model.KayipEsya.Kategori?.Ad</td></tr>
+                                            <tr><th class="text-muted">Marka / Model / Renk</th><td>@Model.KayipEsya.Marka / @Model.KayipEsya.Model / @Model.KayipEsya.Renk</td></tr>
+                                            <tr><th class="text-muted">Seri / IMEI No</th><td>@(string.IsNullOrEmpty(Model.KayipEsya.SeriNo) ? "-" : Model.KayipEsya.SeriNo)</td></tr>
+                                            <tr><th class="text-muted">Bulunma Tarihi</th><td>@Model.KayipEsya.BulunmaTarihi.ToString("dd.MM.yyyy")</td></tr>
+                                            <tr><th class="text-muted">Bulunma Yeri</th><td>@Model.KayipEsya.BulunmaYeri</td></tr>
+                                            <tr><th class="text-muted">Mahalle / Birim</th><td>@Model.KayipEsya.Mahalle / @Model.KayipEsya.Birim</td></tr>
+                                            <tr><th class="text-muted">Raf / Koli No</th><td>@(string.IsNullOrEmpty(Model.KayipEsya.RafNo) ? "-" : Model.KayipEsya.RafNo)</td></tr>
+                                            <tr><th class="text-muted">Eşya Durumu</th><td>@Model.KayipEsya.Durum</td></tr>
+                                            @if (!string.IsNullOrWhiteSpace(Model.KayipEsya.AyirtEdiciOzellik))
+                                            {
+                                                <tr><th class="text-muted">Ayırt Edici Özellik</th><td>@Model.KayipEsya.AyirtEdiciOzellik</td></tr>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(Model.KayipEsya.Aciklama))
+                                            {
+                                                <tr><th class="text-muted">Açıklama</th><td>@Model.KayipEsya.Aciklama</td></tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                    <a asp-controller="KayipEsya"
+                                       asp-action="Details"
+                                       asp-route-id="@Model.KayipEsya.Id"
+                                       class="btn btn-sm btn-outline-success mt-2 rounded-2">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                                        Eşya Detayına Git
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Admin Notları -->
+                <div class="card border rounded-3 shadow-sm mb-4">
+                    <div class="card-header bg-white py-2 border-bottom pb-3">
+                        <h6 class="mb-0 fw-semibold text-secondary d-flex align-items-center">
+                            <i class="bi bi-journal-richtext me-2 fs-5"></i>
+                            İşlem Kayıtları
+                        </h6>
+                    </div>
+                    <div class="card-body bg-white">
+                        <table class="table table-borderless small mb-0 align-middle">
+                            <tbody>
+                                <tr>
+                                    <th class="w-35 text-muted">Oluşturulma Tarihi</th>
+                                    <td><i class="bi bi-clock me-1"></i>@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                </tr>
+                                @if (Model.IslemTarihi.HasValue)
+                                {
+                                    <tr>
+                                        <th class="text-muted">İşlem Tarihi</th>
+                                        <td><i class="bi bi-check2 me-1"></i>@Model.IslemTarihi.Value.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                    </tr>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.OnaylayanAdmin))
+                                {
+                                    <tr>
+                                        <th class="text-muted">İşlemi Yapan</th>
+                                        <td><i class="bi bi-person-check me-1"></i>@Model.OnaylayanAdmin</td>
+                                    </tr>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.AdminNotu))
+                                {
+                                    <tr>
+                                        <th class="text-muted align-top">Admin Notu</th>
+                                        <td><pre class="mb-0 small bg-light p-2 rounded-2 border" style="white-space:pre-wrap;">@Model.AdminNotu</pre></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer İşlemler -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top pt-4">
+                    <a asp-controller="Eslesme"
+                       asp-action="Index"
+                       class="btn btn-outline-secondary px-4 rounded-3 shadow-sm">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Listeye Dön
+                    </a>
+                    <div class="d-flex gap-2 flex-wrap">
+
+                        @if (Model.Durum == EslesmeDurumu.Beklemede)
+                        {
+                            <form asp-controller="Eslesme" asp-action="Onayla" method="post"
+                                  onsubmit="return confirm('Bu eşleşmeyi ONAYLAMAK istediğinize emin misiniz?');">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <button type="submit" class="btn btn-success px-4 rounded-3 shadow-sm">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    Onayla
+                                </button>
+                            </form>
+                            <form asp-controller="Eslesme" asp-action="Reddet" method="post"
+                                  onsubmit="return confirm('Bu eşleşmeyi REDDETMEK istediğinize emin misiniz?');">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <button type="submit" class="btn btn-danger px-4 rounded-3 shadow-sm">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Reddet
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Durum == EslesmeDurumu.Onaylandi)
+                        {
+                            <form asp-controller="Eslesme" asp-action="TeslimEt" method="post"
+                                  onsubmit="return confirm('Bu eşleşme TESLİM EDİLDİ olarak işaretlensin mi?');">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <button type="submit" class="btn btn-primary px-4 rounded-3 shadow-sm">
+                                    <i class="bi bi-box me-1"></i>
+                                    Teslim Edildi
+                                </button>
+                            </form>
+                        }
+
+                        <form asp-controller="Eslesme" asp-action="Sil" method="post"
+                              onsubmit="return confirm('Bu eşleşmeyi SİLMEK istediğinize emin misiniz?');">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-outline-danger px-4 rounded-3 shadow-sm">
+                                <i class="bi bi-trash me-1"></i>
+                                Sil
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>

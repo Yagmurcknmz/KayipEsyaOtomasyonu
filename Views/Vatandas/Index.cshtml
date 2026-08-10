@@ -1,0 +1,500 @@
+@{
+    ViewData["Title"] = "Vatandaş Ana Sayfa";
+    Layout = "~/Views/Shared/_VatandasLayout.cshtml";
+    var sonBildirimler = ViewBag.SonBildirimler as IEnumerable<Bildirim> ?? new List<Bildirim>();
+    var sonBasvurular = ViewBag.SonBasvurular as IEnumerable<KayipBildirimi> ?? new List<KayipBildirimi>();
+    int basvuruSayim = (int)(ViewBag.BasvuruSayim ?? 0);
+    int okunmamisBildirim = (int)(ViewBag.OkunmamisBildirim ?? 0);
+    int teslimEdilenSayim = (int)(ViewBag.TeslimEdilenSayim ?? 0);
+    int eslesmeBekleyen = (int)(ViewBag.EslesmeBekleyen ?? 0);
+    string? adSoyad = ViewBag.AdSoyad as string ?? User.Identity?.Name ?? "Değerli Vatandaşımız";
+    string? telefon = ViewBag.Telefon as string;
+    string? tc = ViewBag.TcKimlikNo as string;
+    DateTime? kayitTarihi = ViewBag.KayitTarihi as DateTime?;
+
+    var saat = DateTime.Now.Hour;
+    string selamlama = saat switch
+    {
+        < 11 => "Günaydın",
+        < 18 => "İyi Günler",
+        < 22 => "İyi Akşamlar",
+        _ => "İyi Geceler"
+    };
+    string ilkHarf = string.IsNullOrWhiteSpace(adSoyad) ? "V" : adSoyad.Trim()[0].ToString().ToUpperInvariant();
+}
+
+<section class="p-4" style="min-height:calc(100vh - 140px);">
+
+    <div class="mb-4">
+        <div class="card border-0 rounded-5 overflow-hidden shadow-sm text-white hero-gradient"
+             style="background: radial-gradient(circle at top right, rgba(255,255,255,.22), transparent 40%),
+                    linear-gradient(135deg, #0b5cff 0%, #083bc7 55%, #052a91 100%);">
+            <div class="card-body p-4 p-md-5">
+                <div class="row align-items-center g-4">
+                    <div class="col-md-8">
+                        <div class="d-flex gap-3 align-items-center">
+                            <div class="rounded-circle hero-avatar-solid text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:72px;height:72px;font-size:28px;font-weight:800;">
+                                @ilkHarf
+                            </div>
+                            <div>
+                                <div class="opacity-85 small mb-1">@selamlama 👋</div>
+                                <h2 class="fw-bold mb-1 lh-sm">@adSoyad</h2>
+                                <div class="small opacity-90">
+                                    Hoş geldiniz — Arnavutköy Belediyesi Kayıp Eşya Portalı
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 gap-md-3 mt-4">
+                            @if (!string.IsNullOrWhiteSpace(tc))
+                            {
+                                <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                    <i class="bi bi-person-vcard me-1 text-primary"></i>TCKN: <strong>@tc</strong>
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(telefon))
+                            {
+                                <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                    <i class="bi bi-telephone me-1 text-primary"></i>@telefon
+                                </span>
+                            }
+                            @if (kayitTarihi.HasValue)
+                            {
+                                <span class="badge hero-badge-solid rounded-pill px-3 py-2">
+                                    <i class="bi bi-calendar-check me-1 text-primary"></i>Hesabım: @kayitTarihi.Value.ToString("dd.MM.yyyy")
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end d-none d-md-block">
+                        <i class="bi bi-search-heart" style="font-size:140px;opacity:.18;"></i>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 gap-md-3 mt-4">
+                    <a asp-controller="KayipBildirimi"
+                       asp-action="Create"
+                       class="btn btn-lg bg-white text-primary rounded-4 px-4 shadow-sm fw-semibold">
+                        <i class="bi bi-megaphone-fill me-1"></i>Yeni Kayıp Bildir
+                    </a>
+                    <a asp-controller="Vatandas"
+                       asp-action="BulunanEsyalar"
+                       class="btn btn-lg rounded-4 px-4 fw-semibold hero-btn-outline">
+                        <i class="bi bi-search me-1"></i>Bulunan Eşyaları Ara
+                    </a>
+                    <a asp-controller="Account"
+                       asp-action="Profilim"
+                       class="btn btn-lg rounded-4 px-4 fw-semibold hero-btn-outline">
+                        <i class="bi bi-person-gear me-1"></i>Profili Düzenle
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-6 col-md-3">
+            <a asp-controller="KayipBildirimi"
+               asp-action="Basvurularim"
+               class="card h-100 border-0 rounded-4 overflow-hidden shadow-sm text-decoration-none text-white"
+               style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small opacity-85">Toplam Başvuru</div>
+                            <div class="fs-1 fw-bold mt-1 mb-0">@basvuruSayim</div>
+                        </div>
+                        <div class="p-2 rounded-3 bg-white bg-opacity-15">
+                            <i class="bi bi-list-check fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="small mt-3 opacity-90 d-flex align-items-center">
+                        Tümünü Gör <i class="bi bi-arrow-right ms-1"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-controller="Vatandas"
+               asp-action="Bildirimlerim"
+               class="card h-100 border-0 rounded-4 overflow-hidden shadow-sm text-decoration-none text-white"
+               style="background:linear-gradient(135deg,#ef4444,#b91c1c);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small opacity-85">Okunmamış Bildirim</div>
+                            <div class="fs-1 fw-bold mt-1 mb-0">@okunmamisBildirim</div>
+                        </div>
+                        <div class="p-2 rounded-3 bg-white bg-opacity-15">
+                            <i class="bi bi-@(okunmamisBildirim > 0 ? "bell-fill" : "bell") fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="small mt-3 opacity-90 d-flex align-items-center">
+                        Bildirimleri Aç <i class="bi bi-arrow-right ms-1"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-controller="KayipBildirimi"
+               asp-action="Basvurularim"
+               class="card h-100 border-0 rounded-4 overflow-hidden shadow-sm text-decoration-none text-white"
+               style="background:linear-gradient(135deg,#f59e0b,#b45309);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small opacity-85">Eşleşme Bekleyen</div>
+                            <div class="fs-1 fw-bold mt-1 mb-0">@eslesmeBekleyen</div>
+                        </div>
+                        <div class="p-2 rounded-3 bg-white bg-opacity-15">
+                            <i class="bi bi-hourglass-split fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="small mt-3 opacity-90 d-flex align-items-center">
+                        Durumları Takip Et <i class="bi bi-arrow-right ms-1"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a asp-controller="KayipBildirimi"
+               asp-action="Basvurularim"
+               class="card h-100 border-0 rounded-4 overflow-hidden shadow-sm text-decoration-none text-white"
+               style="background:linear-gradient(135deg,#10b981,#047857);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small opacity-85">Teslim Edilen</div>
+                            <div class="fs-1 fw-bold mt-1 mb-0">@teslimEdilenSayim</div>
+                        </div>
+                        <div class="p-2 rounded-3 bg-white bg-opacity-15">
+                            <i class="bi bi-check-circle-fill fs-3"></i>
+                        </div>
+                    </div>
+                    <div class="small mt-3 opacity-90 d-flex align-items-center">
+                        Geçmiş Teslimler <i class="bi bi-arrow-right ms-1"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 g-md-4 mb-4">
+        <h6 class="fw-bold mb-0 text-uppercase small text-muted" style="letter-spacing:.5px;">
+            <i class="bi bi-lightning-charge me-1 text-warning"></i>
+            Hızlı İşlemler
+        </h6>
+
+        <div class="col-md-6 col-xl-3">
+            <a asp-controller="KayipBildirimi"
+               asp-action="Create"
+               class="card h-100 border-0 rounded-4 text-decoration-none text-dark bg-white shadow-sm transition-hover">
+                <div class="card-body p-4">
+                    <div class="p-3 rounded-4 mb-3 d-inline-flex"
+                         style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8;">
+                        <i class="bi bi-megaphone-fill fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Kayıp Eşya Bildir</h5>
+                    <p class="text-muted small mb-0">
+                        Kaybettiğiniz eşya hakkında hızlıca yeni bir başvuru oluşturun.
+                    </p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a asp-controller="Vatandas"
+               asp-action="BulunanEsyalar"
+               class="card h-100 border-0 rounded-4 text-decoration-none text-dark bg-white shadow-sm transition-hover">
+                <div class="card-body p-4">
+                    <div class="p-3 rounded-4 mb-3 d-inline-flex"
+                         style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#047857;">
+                        <i class="bi bi-search-heart fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Bulunan Eşyaları Ara</h5>
+                    <p class="text-muted small mb-0">
+                        Belediyemize teslim edilen eşyalar arasında arama yapın.
+                    </p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a asp-controller="KayipBildirimi"
+               asp-action="Basvurularim"
+               class="card h-100 border-0 rounded-4 text-decoration-none text-dark bg-white shadow-sm transition-hover">
+                <div class="card-body p-4">
+                    <div class="p-3 rounded-4 mb-3 d-inline-flex"
+                         style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#6d28d9;">
+                        <i class="bi bi-clipboard2-data fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Başvurularım</h5>
+                    <p class="text-muted small mb-0">
+                        Tüm kayıp eşya başvurularınızı ve durumlarını listeleyin.
+                    </p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a asp-controller="Account"
+               asp-action="Profilim"
+               class="card h-100 border-0 rounded-4 text-decoration-none text-dark bg-white shadow-sm transition-hover">
+                <div class="card-body p-4">
+                    <div class="p-3 rounded-4 mb-3 d-inline-flex"
+                         style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;">
+                        <i class="bi bi-person-lines-fill fs-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Profil Bilgilerim</h5>
+                    <p class="text-muted small mb-0">
+                        Kişisel bilgilerinizi, TCKN ve iletişim bilgilerinizi güncelleyin.
+                    </p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-journal-text me-2 text-primary"></i>
+                        Son Başvurularım
+                    </h6>
+                    <a asp-controller="KayipBildirimi"
+                       asp-action="Basvurularim"
+                       class="btn btn-sm btn-outline-primary rounded-3">
+                        Tümünü Gör
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Eşya</th>
+                                <th>Kategori</th>
+                                <th>Kayıp Tarih</th>
+                                <th>Durum</th>
+                                <th class="pe-4 text-end">Detay</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!sonBasvurular.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox display-6 opacity-25"></i>
+                                        <div class="mt-2">Henüz başvuru oluşturmadınız</div>
+                                        <a asp-controller="KayipBildirimi"
+                                           asp-action="Create"
+                                           class="btn btn-sm btn-primary rounded-3 mt-3">
+                                            <i class="bi bi-plus me-1"></i>Hemen Başvuru Oluştur
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var b in sonBasvurular)
+                            {
+                                string durumBadge = b.Durum switch
+                                {
+                                    "Teslim Edildi" => "bg-success text-white",
+                                    "Eşleşme Bulundu" => "bg-info text-white",
+                                    "İşleme Alındı" => "bg-primary text-white",
+                                    _ => "bg-secondary text-white"
+                                };
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-primary">#@b.Id</td>
+                                    <td class="fw-semibold">@b.EsyaAdi</td>
+                                    <td><small class="badge bg-light text-secondary-emphasis rounded-pill border">@b.Kategori?.Ad</small></td>
+                                    <td><small class="text-muted">@b.KayipTarihi.ToString("dd.MM.yyyy")</small></td>
+                                    <td><span class="badge rounded-pill @durumBadge px-3">@b.Durum</span></td>
+                                    <td class="pe-4 text-end">
+                                        <a asp-controller="KayipBildirimi"
+                                           asp-action="Details"
+                                           asp-route-id="@b.Id"
+                                           class="btn btn-sm btn-outline-primary rounded-3">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-bell me-2 text-danger"></i>
+                        Son Bildirimler
+                    </h6>
+                    <a asp-controller="Vatandas"
+                       asp-action="Bildirimlerim"
+                       class="btn btn-sm btn-outline-danger rounded-3">
+                        Tümü
+                    </a>
+                </div>
+                <div class="p-2">
+                    @if (!sonBildirimler.Any())
+                    {
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-bell-slash display-6 opacity-25"></i>
+                            <div class="mt-2">Henüz bildirim yok</div>
+                        </div>
+                    }
+                    @foreach (var b in sonBildirimler)
+                    {
+                        var turIkon = b.Turu switch
+                        {
+                            BildirimTuru.EslesmeBulundu => "bi-magic text-success",
+                            BildirimTuru.TeslimOnayi => "bi-check-circle-fill text-primary",
+                            BildirimTuru.BasvuruDurumu => "bi-info-circle-fill text-info",
+                            _ => "bi-bell text-secondary"
+                        };
+                        var okunduCss = !b.OkunduMu
+                            ? "border-left:3px solid #dc3545;background:#fff8f8;"
+                            : "border-left:3px solid transparent;";
+                        <a asp-action="BildirimOku"
+                           asp-route-id="@b.Id"
+                           class="d-block text-decoration-none text-dark rounded-3 px-3 py-2 mb-1 border-0"
+                           style="@okunduCss">
+                            <div class="d-flex gap-3 align-items-start">
+                                <div class="flex-shrink-0 mt-1"><i class="bi @turIkon fs-4"></i></div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div class="fw-semibold small">
+                                            @b.Baslik
+                                            @if (!b.OkunduMu)
+                                            {
+                                                <span class="badge bg-danger rounded-pill ms-1">YENİ</span>
+                                            }
+                                        </div>
+                                        <small class="text-muted flex-shrink-0">
+                                            @b.OlusturulmaTarihi.ToString("dd.MM HH:mm")
+                                        </small>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(b.Icerik))
+                                    {
+                                        <div class="small text-muted mt-1"
+                                             style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                                            @b.Icerik
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 g-md-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 px-4">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-lightbulb me-2 text-warning"></i>
+                        Bilgilendirme & İpuçları
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="p-2 rounded-3 bg-primary-subtle text-primary-emphasis flex-shrink-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold small">Otomatik Bildirim</div>
+                                    <div class="small text-muted">Eşyanız bulunduğunda anında size bildirim göndeririz.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="p-2 rounded-3 bg-success-subtle text-success-emphasis flex-shrink-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold small">Eşleşme Takibi</div>
+                                    <div class="small text-muted">Başvurunuz eşleştiğinde durumunuz güncellenir.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="p-2 rounded-3 bg-warning-subtle text-warning-emphasis flex-shrink-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold small">Teslim için Randevu</div>
+                                    <div class="small text-muted">Belediyeye gelmeden önce teslim için randevu alın.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-3">
+                                <div class="p-2 rounded-3 bg-danger-subtle text-danger-emphasis flex-shrink-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold small">Kimlik Zorunlu</div>
+                                    <div class="small text-muted">Teslim alırken T.C. Kimlik kartınızı yanınızda getirin.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden text-white h-100"
+                 style="background: radial-gradient(circle at top right, rgba(255,255,255,.18), transparent 40%),
+                         linear-gradient(135deg,#065f46 0%,#047857 50%,#059669 100%);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="small opacity-85">Belediye İletişim</div>
+                            <h5 class="fw-bold mb-3 mt-1">
+                                <i class="bi bi-telephone-fill me-2"></i>
+                                0 212 311 50 00
+                            </h5>
+                            <div class="small opacity-90 mb-1">
+                                <i class="bi bi-geo-alt me-2"></i>
+                                Arnavutköy / İSTANBUL
+                            </div>
+                            <div class="small opacity-90 mb-4">
+                                <i class="bi bi-clock me-2"></i>
+                                Hafta içi 09:00 - 17:30
+                            </div>
+                            <a href="tel:02123115000"
+                               class="btn bg-white text-success rounded-4 px-4 fw-semibold">
+                                <i class="bi bi-telephone-outbound me-1"></i>Hemen Ara
+                            </a>
+                        </div>
+                        <i class="bi bi-building display-5 opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<style>
+    .transition-hover {
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .transition-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -8px rgba(11,92,255,.25) !important;
+    }
+
+    .hover-shadow:hover {
+        box-shadow: 0 10px 25px -8px rgba(0,0,0,.15) !important;
+    }
+</style>
