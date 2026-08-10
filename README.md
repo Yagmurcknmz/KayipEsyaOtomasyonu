@@ -88,7 +88,7 @@ Ayrıca sistemde:
 * POST işlemlerinde güvenlik kontrolleri
 uygulanmıştır.
 
-Bu proje eğitim ve staj çalışması amacıyla geliştirilmiştir.
+.
 
 Projenin amacı; vatandaş başvurularının, bulunan eşyaların, eşleşmelerin ve teslim süreçlerinin tek bir sistem üzerinden daha düzenli ve takip edilebilir şekilde yönetilmesini sağlamaktır.
 
