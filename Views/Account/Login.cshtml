@@ -1,4 +1,4 @@
-﻿@model KayipEsyaOtomasyonu.ViewModels.LoginViewModel
+@model KayipEsyaOtomasyonu.ViewModels.LoginViewModel
 
 @{
     ViewData["Title"] = "Giriş Yap";
@@ -110,6 +110,29 @@
                          class="alert alert-danger">
                     </div>
 
+                    @{
+                        var hataMesaji = TempData["HataMesaji"] as string;
+                        var basariMesaji = (TempData["Mesaj"] as string) ?? (TempData["BasariliMesaj"] as string);
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(hataMesaji))
+                    {
+                        <div class="alert alert-danger border-0 rounded-4 mb-4 d-flex gap-2 align-items-start"
+                             style="border-left:5px solid #dc2626;">
+                            <i class="bi bi-x-circle-fill flex-shrink-0 mt-1 fs-4"></i>
+                            <span>@Html.Raw(hataMesaji)</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(basariMesaji))
+                    {
+                        <div class="alert alert-success border-0 rounded-4 mb-4 d-flex gap-2 align-items-start"
+                             style="border-left:5px solid #16a34a;">
+                            <i class="bi bi-check-circle-fill flex-shrink-0 mt-1 fs-4"></i>
+                            <span>@Html.Raw(basariMesaji)</span>
+                        </div>
+                    }
+
                     <div class="mb-3">
 
                         <label asp-for="Email"
@@ -171,22 +194,47 @@
 
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+                    <div class="d-flex flex-column gap-2 mb-4">
 
-                        <div class="form-check">
+                        <div class="d-flex justify-content-between align-items-center gap-3">
 
-                            <input asp-for="BeniHatirla"
-                                   class="form-check-input" />
+                            <div class="form-check">
 
-                            <label asp-for="BeniHatirla"
-                                   class="form-check-label">
-                            </label>
+                                <input asp-for="BeniHatirla"
+                                       class="form-check-input" />
+
+                                <label asp-for="BeniHatirla"
+                                       class="form-check-label">
+                                </label>
+
+                            </div>
+
+                            <a asp-controller="Account"
+                               asp-action="ForgotPassword"
+                               class="text-decoration-none fw-semibold text-primary text-end small">
+                                <i class="bi bi-question-circle me-1"></i>
+                                Şifremi Unuttum
+                            </a>
 
                         </div>
 
-                        <span class="text-muted small text-end">
-                            Şifrenizi unuttuysanız yöneticinizle iletişime geçiniz.
-                        </span>
+                        @if (!string.IsNullOrWhiteSpace(ViewBag.ResendEmail as string))
+                        {
+                            <div class="alert alert-info border-0 rounded-4 d-flex gap-2 align-items-start mb-0 small py-2 px-3"
+                                 style="border-left:4px solid #0284c7;">
+                                <i class="bi bi-envelope-paper flex-shrink-0 mt-1 text-info-emphasis"></i>
+                                <div>
+                                    Doğrulama e-postası gelmedi mi?
+                                    <a asp-controller="Account"
+                                       asp-action="ResendConfirmEmail"
+                                       asp-route-email="@((string)(ViewBag.ResendEmail ?? string.Empty))"
+                                       class="fw-bold ms-1 text-info-emphasis text-underline">
+                                        <i class="bi bi-send-plus me-1"></i>
+                                        Tekrar gönder
+                                    </a>
+                                </div>
+                            </div>
+                        }
 
                     </div>
 

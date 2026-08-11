@@ -101,7 +101,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 Aciklama =
                     BosIseNull(viewModel.Aciklama),
 
-                Durum = "Başvuru Alındı",
+                Durum = "Yeni Başvuru",
                 BasvuruTarihi = DateTime.Now,
                 GuncellenmeTarihi = null,
                 AktifMi = true
@@ -116,9 +116,16 @@ namespace KayipEsyaOtomasyonu.Controllers
 
                 TempData["BasariliMesaj"] =
                     $"Başvurunuz başarıyla kaydedildi. " +
-                    $"Başvuru numaranız: {kayipBildirimi.BasvuruNo}";
+                    $"Başvuru numaranız: {kayipBildirimi.BasvuruNo}. " +
+                    $"Aşağıda bulunan eşyalar arasında aramanız yapılmıştır, sonuçları inceleyiniz.";
 
-                return RedirectToAction(nameof(Basvurularim));
+                return RedirectToAction(
+                    "BulunanEsyalar",
+                    "Vatandas",
+                    new {
+                        aranan = viewModel.EsyaAdi,
+                        kategoriId = viewModel.KategoriId.Value
+                    });
             }
             catch (Exception exception)
             {

@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
+using KayipEsyaOtomasyonu.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -132,35 +134,65 @@ namespace KayipEsyaOtomasyonu.Controllers
             string? aranan,
             int? kategoriId)
         {
-            var sorgu = _context.KayipEsyalar
+            var vatandasId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var bulunanlarSorgu = _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
                 .Where(x => x.AktifMi);
 
+            var basvurularimSorgu = _context.KayipBildirimleri
+                .AsNoTracking()
+                .Include(x => x.Kategori)
+                .Where(x => x.AktifMi);
+
+            if (!string.IsNullOrWhiteSpace(vatandasId))
+            {
+                basvurularimSorgu = basvurularimSorgu
+                    .Where(x => x.VatandasId == vatandasId);
+            }
+
             if (kategoriId.HasValue)
             {
-                sorgu = sorgu.Where(x => x.KategoriId == kategoriId.Value);
+                bulunanlarSorgu = bulunanlarSorgu.Where(x => x.KategoriId == kategoriId.Value);
+                basvurularimSorgu = basvurularimSorgu.Where(x => x.KategoriId == kategoriId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(aranan))
             {
-                aranan = aranan.Trim();
+                var a = aranan.Trim();
+                bulunanlarSorgu = bulunanlarSorgu.Where(x =>
+                    x.EsyaAdi.Contains(a) ||
+                    (x.Marka != null && x.Marka.Contains(a)) ||
+                    (x.Model != null && x.Model.Contains(a)) ||
+                    (x.Renk != null && x.Renk.Contains(a)) ||
+                    (x.BulunmaYeri != null && x.BulunmaYeri.Contains(a)) ||
+                    (x.RafNo != null && x.RafNo.Contains(a)));
 
-                sorgu = sorgu.Where(x =>
-                    x.EsyaAdi.Contains(aranan) ||
-                    (x.Marka != null && x.Marka.Contains(aranan)) ||
-                    (x.Model != null && x.Model.Contains(aranan)) ||
-                    (x.Renk != null && x.Renk.Contains(aranan)) ||
-                    (x.BulunmaYeri != null && x.BulunmaYeri.Contains(aranan)) ||
-                    (x.RafNo != null && x.RafNo.Contains(aranan)));
+                basvurularimSorgu = basvurularimSorgu.Where(x =>
+                    x.EsyaAdi.Contains(a) ||
+                    (x.Marka != null && x.Marka.Contains(a)) ||
+                    (x.Model != null && x.Model.Contains(a)) ||
+                    (x.Renk != null && x.Renk.Contains(a)) ||
+                    (x.KayipYeri != null && x.KayipYeri.Contains(a)) ||
+                    (x.AyirtEdiciOzellik != null && x.AyirtEdiciOzellik.Contains(a)));
             }
 
-            var sonuc = await sorgu
-                .OrderByDescending(x => x.OlusturmaTarihi)
+            var bulunanlar = await bulunanlarSorgu
+                .OrderByDescending(x => x.BulunmaTarihi)
                 .ToListAsync();
 
-            ViewData["aranan"] = aranan;
-            ViewData["kategoriId"] = kategoriId;
+            var basvurularim = await basvurularimSorgu
+                .OrderByDescending(x => x.BasvuruTarihi)
+                .ToListAsync();
+
+            var vm = new EsyaSorgulamaViewModel
+            {
+                Aranan = aranan,
+                KategoriId = kategoriId,
+                BulunanEsyalar = bulunanlar,
+                KendiKayipBildirilerim = basvurularim
+            };
 
             ViewBag.Kategoriler = await _context.Kategoriler
                 .AsNoTracking()
@@ -168,7 +200,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .OrderBy(x => x.Ad)
                 .ToListAsync();
 
-            return View(sonuc);
+            return View(vm);
         }
     }
 }

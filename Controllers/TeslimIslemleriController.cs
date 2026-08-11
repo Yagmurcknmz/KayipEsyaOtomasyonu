@@ -165,6 +165,8 @@ namespace KayipEsyaOtomasyonu.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> YeniTeslim(TeslimIslemi model)
         {
+            if (model == null) return BadRequest();
+
             if (model.EslesmeId <= 0)
             {
                 ModelState.AddModelError(nameof(model.EslesmeId), "Bir eşleşme seçmelisiniz.");
