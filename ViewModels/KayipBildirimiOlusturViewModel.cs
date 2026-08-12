@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace KayipEsyaOtomasyonu.ViewModels
 {
@@ -46,5 +47,18 @@ namespace KayipEsyaOtomasyonu.ViewModels
         [StringLength(1000)]
         [Display(Name = "Açıklama")]
         public string? Aciklama { get; set; }
+
+        [Display(Name = "Kayıp Yeri (Enlem - Haritadan seçilecek)")]
+        public double? Enlem { get; set; }
+
+        [Display(Name = "Kayıp Yeri (Boylam - Haritadan seçilecek)")]
+        public double? Boylam { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Kayıp Yeri (Tam Adres / Not)")]
+        public string? AdresDetayi { get; set; }
+
+        [Display(Name = "Eşya Fotoğrafları (En fazla 5 adet)")]
+        public IEnumerable<IFormFile>? ResimDosyalari { get; set; }
     }
 }

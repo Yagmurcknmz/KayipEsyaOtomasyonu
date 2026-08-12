@@ -1,0 +1,88 @@
+@model KayipEsyaOtomasyonu.ViewModels.AuditLogIndexViewModel
+@using KayipEsyaOtomasyonu.Models
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Denetim Kayıtları (Audit Log)";
+    Layout = "_Layout";
+}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center border-bottom">
+        <div>
+            <h5 class="mb-1 text-dark fw-semibold"><i class="bi bi-journal-text text-primary me-2"></i>Denetim Kayıtları</h5>
+            <small class="text-muted">Tüm sistem hareketlerinin kaydı (otomatik tutulur) - Toplam: <b class="text-primary">@Model.ToplamKayit</b> kayıt</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="row g-3 mb-4">
+            <div class="col-md-3"><label class="form-label small fw-semibold text-muted">Ara (KayıtId/İsim/Açıklama)</label><input asp-for="Ara" class="form-control" placeholder="Ara..." /></div>
+            <div class="col-md-2"><label class="form-label small fw-semibold text-muted">Tablo</label>
+                <select asp-for="TabloAdi" class="form-select"><option value="">Tümü</option>
+                    @if (ViewBag.TabloAdlari != null) { foreach (var t in (IEnumerable<string>)ViewBag.TabloAdlari) { <option value="@t">@t</option> } }
+                </select></div>
+            <div class="col-md-2"><label class="form-label small fw-semibold text-muted">Tip</label>
+                <select asp-for="Tip" class="form-select"><option value="">Tümü</option><option value="1">Create (Ekleme)</option><option value="2">Update (Güncelleme)</option><option value="3">Delete (Silme)</option><option value="4">Giriş</option><option value="5">Çıkış</option></select></div>
+            <div class="col-md-2"><label class="form-label small fw-semibold text-muted">Başlangıç Tarihi</label><input asp-for="Baslangic" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label small fw-semibold text-muted">Bitiş Tarihi</label><input asp-for="Bitis" type="date" class="form-control" /></div>
+            <div class="col-md-1 d-grid gap-2 align-self-end"><button class="btn btn-primary" type="submit"><i class="bi bi-funnel-fill me-1"></i>Filtrele</button></div>
+        </form>
+
+        @if (!Model.Kayitlar.Any()) {
+            <div class="text-center py-5 text-muted"><i class="bi bi-journal-x display-4 mb-3 d-block opacity-40"></i><h5>Denetim kaydı bulunamadı.</h5><small>En az bir kayıt oluşturduğunuzda burada listelenecektir.</small></div>
+        } else {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Tarih</th><th>Kullanıcı</th><th>Tip</th><th>Tablo</th><th>Kayıt</th><th>IP</th><th>Açıklama</th><th class="text-end">Detay</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Kayitlar) {
+                            <tr>
+                                <td><small class="text-muted">@a.Tarih.ToString("dd.MM.yyyy HH:mm")</small></td>
+                                <td><small>@(string.IsNullOrWhiteSpace(a.UserName) ? "—" : a.UserName)</small></td>
+                                <td>@switch (a.Tip) {
+                                    case AuditTip.Create: <span class="badge bg-success"><i class="bi bi-plus-lg me-1"></i>Ekleme</span> break;
+                                    case AuditTip.Update: <span class="badge bg-warning text-dark"><i class="bi bi-pencil me-1"></i>Güncelleme</span> break;
+                                    case AuditTip.Delete: <span class="badge bg-danger"><i class="bi bi-trash me-1"></i>Silme</span> break;
+                                    case AuditTip.Login: <span class="badge bg-info text-dark"><i class="bi bi-box-arrow-in-right me-1"></i>Giriş</span> break;
+                                    case AuditTip.Logout: <span class="badge bg-secondary"><i class="bi bi-box-arrow-left me-1"></i>Çıkış</span> break;
+                                    default: <span class="badge bg-light text-dark">@a.Tip</span> break;
+                                }</td>
+                                <td><code class="small">@(string.IsNullOrWhiteSpace(a.TabloAdi) ? "—" : a.TabloAdi)</code></td>
+                                <td><small>@(string.IsNullOrWhiteSpace(a.KayitAnahtari) ? (a.KayitId == null ? "—" : "#" + a.KayitId) : a.KayitAnahtari)</small></td>
+                                <td><small class="text-muted">@(string.IsNullOrWhiteSpace(a.IpAdresi) ? "—" : a.IpAdresi)</small></td>
+                                <td><small>@(string.IsNullOrWhiteSpace(a.Aciklama) ? "—" : a.Aciklama)</small></td>
+                                <td class="text-end"><button class="btn btn-sm btn-outline-primary btn-detay" data-eski='@a.EskiDegerlerJson' data-yeni='@a.YeniDegerlerJson' data-bs-toggle="modal" data-bs-target="#detayModal"><i class="bi bi-eye"></i></button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <small class="text-muted">Sayfa @(Model.Sayfa) / @Model.ToplamSayfa · Sayfada @Model.Kayitlar.Count kayıt</small>
+                <div>
+                    <a asp-action="Index" asp-route-sayfa="1" asp-route-sayfaBoyutu="@Model.SayfaBoyutu" asp-route-ara="@Model.Ara" asp-route-tabloAdi="@Model.TabloAdi" asp-route-tip="@Model.Tip" asp-route-baslangic="@(Model.Baslangic != null ? Model.Baslangic.Value.ToString("yyyy-MM-dd") : "")" asp-route-bitis="@(Model.Bitis != null ? Model.Bitis.Value.ToString("yyyy-MM-dd") : "")" class="btn btn-sm btn-outline-secondary @(Model.Sayfa <= 1 ? "disabled":"")">&laquo; İlk</a>
+                    <a asp-action="Index" asp-route-sayfa="@(Model.Sayfa - 1)" asp-route-sayfaBoyutu="@Model.SayfaBoyutu" asp-route-ara="@Model.Ara" asp-route-tabloAdi="@Model.TabloAdi" asp-route-tip="@Model.Tip" asp-route-baslangic="@(Model.Baslangic != null ? Model.Baslangic.Value.ToString("yyyy-MM-dd") : "")" asp-route-bitis="@(Model.Bitis != null ? Model.Bitis.Value.ToString("yyyy-MM-dd") : "")" class="btn btn-sm btn-outline-secondary @(Model.Sayfa <= 1 ? "disabled":"")">&lsaquo; Önceki</a>
+                    <a asp-action="Index" asp-route-sayfa="@(Model.Sayfa + 1)" asp-route-sayfaBoyutu="@Model.SayfaBoyutu" asp-route-ara="@Model.Ara" asp-route-tabloAdi="@Model.TabloAdi" asp-route-tip="@Model.Tip" asp-route-baslangic="@(Model.Baslangic != null ? Model.Baslangic.Value.ToString("yyyy-MM-dd") : "")" asp-route-bitis="@(Model.Bitis != null ? Model.Bitis.Value.ToString("yyyy-MM-dd") : "")" class="btn btn-sm btn-outline-secondary @(Model.Sayfa >= Model.ToplamSayfa ? "disabled":"")">Sonraki &rsaquo;</a>
+                    <a asp-action="Index" asp-route-sayfa="@Model.ToplamSayfa" asp-route-sayfaBoyutu="@Model.SayfaBoyutu" asp-route-ara="@Model.Ara" asp-route-tabloAdi="@Model.TabloAdi" asp-route-tip="@Model.Tip" asp-route-baslangic="@(Model.Baslangic != null ? Model.Baslangic.Value.ToString("yyyy-MM-dd") : "")" asp-route-bitis="@(Model.Bitis != null ? Model.Bitis.Value.ToString("yyyy-MM-dd") : "")" class="btn btn-sm btn-outline-secondary @(Model.Sayfa >= Model.ToplamSayfa ? "disabled":"")">Son &raquo;</a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="detayModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="bi bi-clipboard-data-fill me-2 text-primary"></i>Kayıt Değişiklik Detayı</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+    <div class="row g-3">
+        <div class="col-md-6"><div class="card h-100 border-danger"><div class="card-header bg-danger text-white small fw-semibold">Önceki Değerler (Eski)</div><div class="card-body p-0"><pre id="eskiDegerler" class="mb-0 p-3 small" style="max-height:380px;overflow:auto;background:#fef2f2;border-radius:0 0 8px 8px;">{}</pre></div></div></div>
+        <div class="col-md-6"><div class="card h-100 border-success"><div class="card-header bg-success text-white small fw-semibold">Yeni Değerler</div><div class="card-body p-0"><pre id="yeniDegerler" class="mb-0 p-3 small" style="max-height:380px;overflow:auto;background:#ecfdf5;border-radius:0 0 8px 8px;">{}</pre></div></div></div>
+    </div>
+</div></div></div></div>
+
+<script>
+    document.querySelectorAll('.btn-detay').forEach(function (b) {
+        b.addEventListener('click', function () {
+            const eski = b.getAttribute('data-eski') || '{}';
+            const yeni = b.getAttribute('data-yeni') || '{}';
+            try { document.getElementById('eskiDegerler').textContent = JSON.stringify(JSON.parse(eski), null, 2); } catch (e) { document.getElementById('eskiDegerler').textContent = eski; }
+            try { document.getElementById('yeniDegerler').textContent = JSON.stringify(JSON.parse(yeni), null, 2); } catch (e) { document.getElementById('yeniDegerler').textContent = yeni; }
+        });
+    });
+</script>

@@ -69,5 +69,17 @@ namespace KayipEsyaOtomasyonu.Models
 
         [Display(Name = "Admin Notları")]
         public string? AdminNotu { get; set; }
+
+        [Display(Name = "Kayıp Yeri (Enlem)")]
+        public double? Enlem { get; set; }
+
+        [Display(Name = "Kayıp Yeri (Boylam)")]
+        public double? Boylam { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Kayıp Yeri (Tam Adres)")]
+        public string? AdresDetayi { get; set; }
+
+        public List<KayipBildirimiResim> Resimler { get; set; } = new();
     }
 }

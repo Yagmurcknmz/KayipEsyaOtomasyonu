@@ -124,6 +124,7 @@
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
+                                    <th style="width:90px;">Görsel</th>
                                     <th>Eşya</th>
                                     <th>Kategori</th>
                                     <th>Marka / Model</th>
@@ -138,7 +139,27 @@
                             <tbody>
                                 @foreach (var esya in Model.BulunanEsyalar)
                                 {
+                                    var kapakResim = esya.Resimler?.FirstOrDefault(r => r.AktifMi);
+                                    var kapakYol = kapakResim != null ?
+                                        (!string.IsNullOrWhiteSpace(kapakResim.ThumbnailYolu) ? ("/" + kapakResim.ThumbnailYolu.Replace("\\", "/")) : (!string.IsNullOrWhiteSpace(kapakResim.DosyaYolu) ? ("/" + kapakResim.DosyaYolu.Replace("\\", "/")) : null))
+                                        : null;
                                     <tr>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(kapakYol))
+                                            {
+                                                <img src="@kapakYol"
+                                                     alt="@esya.EsyaAdi"
+                                                     class="rounded-3 object-fit-cover"
+                                                     style="width:68px;height:68px;box-shadow:0 4px 12px rgba(15,23,42,0.12);" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-3 d-flex align-items-center justify-content-center text-muted bg-light"
+                                                     style="width:68px;height:68px;">
+                                                    <i class="bi bi-image fs-3 opacity-40"></i>
+                                                </div>
+                                            }
+                                        </td>
                                         <td><strong>@esya.EsyaAdi</strong></td>
                                         <td>@(esya.Kategori?.Ad ?? "-")</td>
                                         <td>
@@ -228,6 +249,7 @@
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
+                                    <th style="width:90px;">Görsel</th>
                                     <th>Başvuru No</th>
                                     <th>Kayıp Eşya</th>
                                     <th>Kategori</th>
@@ -243,7 +265,27 @@
                             <tbody>
                                 @foreach (var b in Model.KendiKayipBildirilerim)
                                 {
+                                    var kapakResim = b.Resimler?.FirstOrDefault(r => r.AktifMi);
+                                    var kapakYol = kapakResim != null ?
+                                        (!string.IsNullOrWhiteSpace(kapakResim.ThumbnailYolu) ? ("/" + kapakResim.ThumbnailYolu.Replace("\\", "/")) : (!string.IsNullOrWhiteSpace(kapakResim.DosyaYolu) ? ("/" + kapakResim.DosyaYolu.Replace("\\", "/")) : null))
+                                        : null;
                                     <tr>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(kapakYol))
+                                            {
+                                                <img src="@kapakYol"
+                                                     alt="@b.EsyaAdi"
+                                                     class="rounded-3 object-fit-cover"
+                                                     style="width:68px;height:68px;box-shadow:0 4px 12px rgba(15,23,42,0.12);" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-3 d-flex align-items-center justify-content-center text-muted bg-light"
+                                                     style="width:68px;height:68px;">
+                                                    <i class="bi bi-image fs-3 opacity-40"></i>
+                                                </div>
+                                            }
+                                        </td>
                                         <td>
                                             <span class="badge bg-dark text-white">@b.BasvuruNo</span>
                                         </td>

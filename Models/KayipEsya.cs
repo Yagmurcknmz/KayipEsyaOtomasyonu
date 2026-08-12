@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace KayipEsyaOtomasyonu.Models
@@ -74,5 +74,17 @@ namespace KayipEsyaOtomasyonu.Models
         public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
 
         public DateTime? GuncellenmeTarihi { get; set; }
+
+        [Display(Name = "Bulunma Yeri (Enlem)")]
+        public double? Enlem { get; set; }
+
+        [Display(Name = "Bulunma Yeri (Boylam)")]
+        public double? Boylam { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "Bulunma Yeri (Tam Adres)")]
+        public string? AdresDetayi { get; set; }
+
+        public List<KayipEsyaResim> Resimler { get; set; } = new();
     }
 }

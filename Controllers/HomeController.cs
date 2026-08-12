@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
 using KayipEsyaOtomasyonu.ViewModels;
@@ -110,27 +110,6 @@ namespace KayipEsyaOtomasyonu.Controllers
                     .ToListAsync()
             };
 
-            model.KategoriBazliDagilim = await _context.KayipEsyalar
-                .AsNoTracking()
-                .Include(x => x.Kategori)
-                .GroupBy(x => x.Kategori!.Ad ?? "Diğer")
-                .Select(g => new DashboardKategoriGrafik
-                {
-                    KategoriAdi = g.Key,
-                    Adet = g.Count()
-                })
-                .OrderByDescending(x => x.Adet)
-                .Take(8)
-                .ToListAsync();
-
-            if (model.KategoriBazliDagilim.Any() && toplamKayipEsya > 0)
-            {
-                foreach (var item in model.KategoriBazliDagilim)
-                {
-                    item.Yuzde = Math.Round(
-                        item.Adet * 100.0 / toplamKayipEsya, 1);
-                }
-            }
 
             var durumlar = new[]
             {
@@ -158,6 +137,16 @@ namespace KayipEsyaOtomasyonu.Controllers
                     });
                 }
             }
+
+            // EKSTRA: Onaylanan / Reddedilen / Bugün istatistik
+            model.OnaylananEslesme = await _context.Eslesmeler.CountAsync(e => e.AktifMi && e.Durum == EslesmeDurumu.Onaylandi);
+            model.ReddedilenEslesme = await _context.Eslesmeler.CountAsync(e => e.AktifMi && e.Durum == EslesmeDurumu.Reddedildi);
+            model.BugunYeniKayit = await _context.KayipEsyalar.CountAsync(x => x.OlusturmaTarihi.Date == DateTime.Today);
+            model.BugunYeniBasvuru = await _context.KayipBildirimleri.CountAsync(x => x.BasvuruTarihi.Date == DateTime.Today);
+
+            var topBulunan = await _context.KayipEsyalar.CountAsync(x => x.AktifMi && x.Durum == "Teslim Edildi");
+            model.TeslimOraniYuzde = toplamKayipEsya == 0 ? 0 : Math.Round(100.0 * topBulunan / toplamKayipEsya, 1);
+
 
             return View(model);
         }

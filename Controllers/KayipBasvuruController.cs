@@ -26,6 +26,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .AsNoTracking()
                 .Include(x => x.Kategori)
                 .Include(x => x.Vatandas)
+                .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(arama))
@@ -101,6 +102,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .AsNoTracking()
                 .Include(x => x.Kategori)
                 .Include(x => x.Vatandas)
+                .Include(x => x.Resimler.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi))
                 .FirstOrDefaultAsync(x => x.Id == id.Value);
 
             if (basvuru == null)
@@ -115,6 +117,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 eslesenEsyalar = await _context.KayipEsyalar
                     .AsNoTracking()
                     .Include(x => x.Kategori)
+                    .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                     .Where(x => x.AktifMi)
                     .Where(x =>
                         x.KategoriId == basvuru.KategoriId ||

@@ -38,6 +38,7 @@
                 <form asp-controller="KayipEsya"
                       asp-action="Create"
                       method="post"
+                      enctype="multipart/form-data"
                       novalidate>
 
                     <div asp-validation-summary="All"
@@ -329,6 +330,53 @@
 
                     </div>
 
+                    <!-- #################### RESİM YÜKLEME #################### -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="card border rounded-3 shadow-sm h-100">
+                                <div class="card-header bg-white py-2 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold text-danger d-flex align-items-center">
+                                        <i class="bi bi-card-image me-2 fs-5"></i>
+                                        Eşya Fotoğrafları (En Fazla 5)
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white">
+                                    <input type="file" name="ResimDosyalari" id="ResimDosyalari" multiple accept="image/jpeg,image/png,image/gif,image/webp,image/bmp" class="form-control rounded-2" />
+                                    <div class="small text-muted mt-2">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        1. dosya varsayılan (kapak) fotoğraf olur. Maks 20 MB.
+                                    </div>
+                                    <div id="resimOnizleme" class="d-flex gap-2 flex-wrap mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- #################### HARİTA (BULUNMA YERİ) #################### -->
+                        <div class="col-md-6">
+                            <div class="card border rounded-3 shadow-sm h-100">
+                                <div class="card-header bg-white py-2 border-bottom pb-3">
+                                    <h6 class="mb-0 fw-semibold d-flex align-items-center" style="color:#0ea5e9;">
+                                        <i class="bi bi-geo-alt-fill me-2 fs-5"></i>
+                                        Bulunma Yeri (Haritadan İşaretle)
+                                    </h6>
+                                </div>
+                                <div class="card-body bg-white p-0">
+                                    <div id="harita" style="height:260px;border-radius:0 0 10px 10px;"></div>
+                                    <div class="p-3">
+                                        <div class="row g-2">
+                                            <div class="col-6"><label class="small text-muted fw-semibold">Enlem</label><input asp-for="Enlem" id="Enlem" readonly class="form-control form-control-sm rounded-2" placeholder="Haritaya tıklayın" /></div>
+                                            <div class="col-6"><label class="small text-muted fw-semibold">Boylam</label><input asp-for="Boylam" id="Boylam" readonly class="form-control form-control-sm rounded-2" placeholder="Haritaya tıklayın" /></div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="small text-muted fw-semibold">Adres Detayı</label>
+                                            <textarea asp-for="AdresDetayi" id="AdresDetayi" rows="2" class="form-control form-control-sm rounded-2" placeholder="Tam adres, sokak, cadde, bina no vb."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- #################### FORM FOOTER (BUTONLAR) #################### -->
                     <div class="card-footer bg-white border-0 border-top rounded-4 mt-2 pt-4 px-0 d-flex justify-content-sm-end justify-content-between align-items-center flex-wrap gap-2">
 
@@ -366,6 +414,47 @@
 
     </div>
 </div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.getElementById('ResimDosyalari').addEventListener('change', function (e) {
+        const onizleme = document.getElementById('resimOnizleme');
+        onizleme.innerHTML = '';
+        const max = 5;
+        const dosyalar = Array.from(e.target.files).slice(0, max);
+        if (e.target.files.length > max) { e.target.files = new DataTransfer().files; alert('En fazla ' + max + ' resim seçebilirsiniz. İlk ' + max + ' dosya alınır.'); }
+        dosyalar.forEach(f => {
+            if (!f.type.startsWith('image/')) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const img = document.createElement('img');
+                img.src = ev.target.result;
+                img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid #e5e7eb;';
+                onizleme.appendChild(img);
+            };
+            r.readAsDataURL(f);
+        });
+    });
+
+    const map = L.map('harita').setView([39.9334, 32.8597], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+    let marker = null;
+    map.on('click', function (e) {
+        document.getElementById('Enlem').value = e.latlng.lat.toFixed(6);
+        document.getElementById('Boylam').value = e.latlng.lng.toFixed(6);
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([e.latlng.lat, e.latlng.lng], { draggable: true }).addTo(map);
+        marker.on('dragend', function (ev) {
+            const p = ev.target.getLatLng();
+            document.getElementById('Enlem').value = p.lat.toFixed(6);
+            document.getElementById('Boylam').value = p.lng.toFixed(6);
+        });
+    });
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

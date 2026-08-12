@@ -58,7 +58,8 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             ViewBag.SonBildirimler = await _context.Bildirimler
                 .AsNoTracking()
-                .Include(b => b.KayipBildirimi)
+                .Include(b => b.KayipBildirimi)!
+                    .ThenInclude(kb => kb!.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .Where(b => b.AliciUserId == user.Id && b.AktifMi)
                 .OrderByDescending(b => b.OlusturulmaTarihi)
                 .Take(5)
@@ -67,6 +68,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             ViewBag.SonBasvurular = await _context.KayipBildirimleri
                 .AsNoTracking()
                 .Include(b => b.Kategori)
+                .Include(b => b.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .Where(b => b.VatandasId == user.Id && b.AktifMi)
                 .OrderByDescending(b => b.BasvuruTarihi)
                 .Take(6)
@@ -85,6 +87,8 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .AsNoTracking()
                 .Include(b => b.KayipBildirimi)
                     .ThenInclude(b => b!.Kategori)
+                .Include(b => b.KayipBildirimi)!
+                    .ThenInclude(b => b!.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .Include(b => b.Eslesme)
                 .Where(b => b.AliciUserId == user.Id && b.AktifMi)
                 .OrderByDescending(b => b.OlusturulmaTarihi)
@@ -139,11 +143,13 @@ namespace KayipEsyaOtomasyonu.Controllers
             var bulunanlarSorgu = _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .Where(x => x.AktifMi);
 
             var basvurularimSorgu = _context.KayipBildirimleri
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .Where(x => x.AktifMi);
 
             if (!string.IsNullOrWhiteSpace(vatandasId))

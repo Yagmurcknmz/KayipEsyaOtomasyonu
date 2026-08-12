@@ -85,7 +85,8 @@
 
             <form asp-controller="KayipBildirimi"
                   asp-action="Create"
-                  method="post">
+                  method="post"
+                  enctype="multipart/form-data">
 
                 <div asp-validation-summary="ModelOnly"
                      class="alert alert-danger rounded-4 border-0 mb-4"
@@ -163,16 +164,18 @@
                 <div class="mb-4 pb-3 border-bottom">
                     <h5 class="fw-bold mb-1">
                         <span class="me-2 badge bg-primary-subtle text-primary-emphasis rounded-pill px-3 py-1">Adım 2</span>
-                        Kayıp Detayları
+                        Ne Zaman & Nerede Kayboldu?
                     </h5>
-                    <small class="text-muted">Ne zaman ve nerede kaybettiğiniz bilgisi eşleşmeyi sağlar.</small>
+                    <small class="text-muted">Tarihi seçin, kaybolduğu yeri <b class="text-primary">haritadan tıklayarak</b> işaretleyin.</small>
                 </div>
 
+                <input type="hidden" asp-for="KayipYeri" id="KayipYeri" />
+
                 <div class="row g-4 mb-5">
-                    <div class="col-md-6">
+                    <div class="col-md-6 col-xl-4">
                         <label asp-for="KayipTarihi" class="form-label fw-semibold">Kayıp Tarihi *</label>
                         <div class="input-group input-group-lg">
-                            <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                            <span class="input-group-text"><i class="bi bi-calendar-event-fill"></i></span>
                             <input asp-for="KayipTarihi"
                                    type="date"
                                    max="@DateTime.Today.ToString("yyyy-MM-dd")"
@@ -181,15 +184,67 @@
                         <span asp-validation-for="KayipTarihi" class="text-danger small d-block mt-1"></span>
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="KayipYeri" class="form-label fw-semibold">Kayıp Yeri *</label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
-                            <input asp-for="KayipYeri"
-                                   class="form-control rounded-end-3"
-                                   placeholder="Örneğin: Arnavutköy Meydanı, Otobüs Durağı" />
+                    <div class="col-md-6 col-xl-8">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-info-circle text-info me-1"></i>
+                            Önizleme — İşaretlenen Konum
+                        </label>
+                        <div id="konumOnizleme"
+                             class="p-3 rounded-4 border d-flex align-items-center gap-3 h-100"
+                             style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%);">
+                            <div class="rounded-pill d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0"
+                                 style="width:48px;height:48px;background:linear-gradient(135deg,#0ea5e9,#6366f1);">
+                                <i class="bi bi-geo-alt-fill fs-5"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="small fw-semibold text-primary mb-1">Haritadan Konum Seçilmedi</div>
+                                <div class="small text-muted">Adım 2'deki haritadan <b>tıklayarak</b> kaybolduğu yeri işaretleyin.</div>
+                            </div>
+                            <div class="d-none flex-column gap-1 text-end flex-shrink-0">
+                                <small class="fw-semibold text-dark">Enlem</small><small class="fw-semibold text-dark">Boylam</small>
+                            </div>
                         </div>
-                        <span asp-validation-for="KayipYeri" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card border rounded-4 shadow-sm overflow-hidden">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3 border-bottom">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-3 px-3 py-1 text-white fw-semibold small shadow-sm"
+                                          style="background:linear-gradient(135deg,#0ea5e9,#6366f1);">
+                                        <i class="bi bi-hand-index-thumb me-1"></i>Haritadan İşaretle
+                                    </span>
+                                    <small class="text-muted ms-1">
+                                        <i class="bi bi-lightbulb text-warning me-1"></i>En doğru konumu görmek için haritayı yakınlaştır (zoom +)
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-2 d-none d-sm-flex">
+                                    <div class="row g-2">
+                                        <div class="col-auto"><input asp-for="Enlem" id="Enlem" readonly class="form-control form-control-sm rounded-3 bg-light" placeholder="Enlem" style="min-width:150px;cursor:default;" /></div>
+                                        <div class="col-auto"><input asp-for="Boylam" id="Boylam" readonly class="form-control form-control-sm rounded-3 bg-light" placeholder="Boylam" style="min-width:150px;cursor:default;" /></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="harita" style="height:360px;width:100%;"></div>
+                                <div class="p-4 border-top bg-gradient-to-br" style="background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);">
+                                    <label class="form-label fw-semibold mb-1">
+                                        <i class="bi bi-signpost-2-fill text-info me-1"></i>
+                                        Tam Adres (Zorunlu Değil, Eşleşmeyi Hızlandırır)
+                                    </label>
+                                    <textarea asp-for="AdresDetayi"
+                                              id="AdresDetayi"
+                                              rows="2"
+                                              class="form-control rounded-3"
+                                              style="min-height:76px;"
+                                              placeholder="Örn: Kızılay Meydanı, Esenboğa Havalimanı Dış Hatlar, 123. Sokak 45/6 Altındağ..."></textarea>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-lightning-charge-fill text-warning me-1"></i>
+                                        Bu adres, eşleşme sağlanırken eşyayı teslim almak için kullanılacaktır.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -233,7 +288,54 @@
                     </div>
                 </div>
 
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-4 rounded-4 bg-light">
+                <div class="mb-4 pb-3 border-bottom mt-5">
+                    <h5 class="fw-bold mb-1">
+                        <span class="me-2 badge text-bg-danger rounded-pill px-3 py-1">Adım 4</span>
+                        Eşya Fotoğrafları
+                        <small class="badge rounded-pill bg-light text-dark ms-2 fw-normal">
+                            <i class="bi bi-stars text-warning me-1"></i>Eşleşme şansını %80 oranında artırır!
+                        </small>
+                    </h5>
+                    <small class="text-muted">Net fotoğraflar yükleyin — <b class="text-danger">İlk fotoğraf kapak</b> olarak gösterilir (Maks 5 adet).</small>
+                </div>
+
+                <div class="card border rounded-4 shadow-sm mb-5 overflow-hidden">
+                    <div class="card-body p-4">
+                        <div class="row g-4 align-items-center">
+                            <div class="col-lg-5">
+                                <label for="ResimDosyalari"
+                                       class="btn btn-lg w-100 d-flex flex-column align-items-center justify-content-center rounded-4 position-relative overflow-hidden"
+                                       style="min-height:150px;background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 45%,#fecaca 100%);border:2px dashed #fca5a5;cursor:pointer;">
+                                    <i class="bi bi-cloud-arrow-up-fill mb-2 text-danger" style="font-size:44px;"></i>
+                                    <div class="fw-bold text-dark">Fotoğrafları Yükle</div>
+                                    <div class="small text-muted mt-1">PNG, JPG, WEBP · Maks 20 MB · Tıkla veya Sürükle & Bırak</div>
+                                    <input type="file" name="ResimDosyalari" id="ResimDosyalari" multiple accept="image/*" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" />
+                                </label>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center small mb-1">
+                                        <span class="text-muted fw-semibold">Yüklenen</span>
+                                        <span class="fw-bold"><span id="resimSayac">0</span> / 5</span>
+                                    </div>
+                                    <div class="progress rounded-pill overflow-hidden" style="height:8px;">
+                                        <div id="resimProgress" class="progress-bar rounded-pill" role="progressbar" style="width:0%;background:linear-gradient(90deg,#ef4444,#f97316);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-7">
+                                <div id="resimOnizleme"
+                                     class="d-flex flex-wrap gap-3 align-items-center justify-content-lg-end justify-content-center min-h-160 p-3 rounded-4 border"
+                                     style="min-height:160px;background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);">
+                                    <div class="text-muted d-flex flex-column align-items-center justify-content-center py-5">
+                                        <i class="bi bi-images display-5 opacity-25 mb-2"></i>
+                                        <small class="fw-semibold opacity-50">Henüz fotoğraf yüklenmedi</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-4 rounded-4 border bg-light bg-gradient">
                     <div class="small text-muted d-flex align-items-center gap-2">
                         <i class="bi bi-shield-lock text-primary fs-4"></i>
                         <div>
@@ -263,25 +365,163 @@
 
 </section>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    (function(){
+        /* ============ HARITA - KONUM ISLEMLERI ============ */
+        function konumGoster(lat, lng, adres) {
+            const panel = document.getElementById('konumOnizleme');
+            if (!panel) return;
+            const ikon = panel.querySelector('.rounded-pill');
+            const baslik = panel.querySelector('.small.fw-semibold');
+            const aciklama = panel.querySelectorAll('.small')[1];
+            const coordCol = panel.querySelector('.d-none.flex-column');
+            ikon.style.background = lat ? 'linear-gradient(135deg,#16a34a,#047857)' : 'linear-gradient(135deg,#0ea5e9,#6366f1)';
+            ikon.innerHTML = lat ? '<i class="bi bi-check-circle-fill fs-5"></i>' : '<i class="bi bi-geo-alt-fill fs-5"></i>';
+            panel.style.background = lat
+                ? 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)'
+                : 'linear-gradient(135deg, #eff6ff 0%, #f0fdfa 100%)';
+            if (lat) {
+                baslik.classList.remove('text-primary'); baslik.classList.add('text-success');
+                baslik.textContent = 'Konum İşaretlendi ✓';
+                const adresSatiri = (adres && adres.trim().length) ? adres.trim().substring(0,70) + (adres.length > 70 ? '...':'') : 'Haritadan seçilen konum';
+                aciklama.innerHTML = '<b class="text-dark">Adres:</b> ' + adresSatiri;
+                coordCol.classList.remove('d-none');
+                coordCol.innerHTML = '<small class="fw-semibold text-dark">Enlem: <span class="text-muted font-mono fw-normal">' + Number(lat).toFixed(5) + '</span></small>'
+                                    + '<small class="fw-semibold text-dark">Boylam: <span class="text-muted font-mono fw-normal">' + Number(lng).toFixed(5) + '</span></small>';
+            } else {
+                baslik.classList.add('text-primary'); baslik.classList.remove('text-success');
+                baslik.textContent = 'Haritadan Konum Seçilmedi';
+                aciklama.innerHTML = 'Adım 2\'deki haritadan <b>tıklayarak</b> kaybolduğu yeri işaretleyin.';
+                coordCol.classList.add('d-none');
+            }
+        }
+
+        function kayipYeriGuncelle() {
+            const adres = (document.getElementById('AdresDetayi').value || '').trim();
+            const lat = document.getElementById('Enlem').value;
+            const lng = document.getElementById('Boylam').value;
+            let sonuc = '';
+            if (adres) sonuc = adres.substring(0, 180);
+            else if (lat && lng) sonuc = 'Harita Konumu (' + Number(lat).toFixed(4) + ', ' + Number(lng).toFixed(4) + ')';
+            document.getElementById('KayipYeri').value = sonuc;
+            konumGoster(lat, lng, adres || sonuc);
+        }
+
+        const map = L.map('harita').setView([39.9334, 32.8597], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+        let marker = null;
+        function isaretle(lat, lng) {
+            document.getElementById('Enlem').value = Number(lat).toFixed(6);
+            document.getElementById('Boylam').value = Number(lng).toFixed(6);
+            if (marker) map.removeLayer(marker);
+            marker = L.marker([lat, lng], { draggable: true, autoPan: true }).addTo(map);
+            marker.bindPopup('<div class="text-center p-1"><b style="color:#16a34a;"><i class="bi bi-pin-map-fill me-1"></i>Kayıp Yeri</b><br/><small class="text-muted">Taşıyarak konumu düzeltin</small></div>').openPopup();
+            marker.on('dragend', ev => {
+                const p = ev.target.getLatLng();
+                isaretle(p.lat, p.lng);
+            });
+            kayipYeriGuncelle();
+        }
+        map.on('click', e => isaretle(e.latlng.lat, e.latlng.lng));
+        document.getElementById('AdresDetayi').addEventListener('input', kayipYeriGuncelle);
+        kayipYeriGuncelle();
+
+        /* ============ RESIM YUKLEME - SIL + KAPAK + PROGRESS ============ */
+        let seciliDosyalar = [];
+        const inputResim = document.getElementById('ResimDosyalari');
+        const onizlemeDiv = document.getElementById('resimOnizleme');
+        const sayacSpan = document.getElementById('resimSayac');
+        const progressBar = document.getElementById('resimProgress');
+
+        function resimleriRenderEt() {
+            if (!seciliDosyalar.length) {
+                onizlemeDiv.innerHTML = '<div class="text-muted d-flex flex-column align-items-center justify-content-center py-5 w-100"><i class="bi bi-images display-5 opacity-25 mb-2"></i><small class="fw-semibold opacity-50">Henüz fotoğraf yüklenmedi</small></div>';
+            } else {
+                onizlemeDiv.innerHTML = '';
+                seciliDosyalar.forEach((f, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'position-relative resim-kart';
+                    wrap.style.cssText = 'width:110px;height:110px;border-radius:16px;overflow:hidden;box-shadow:0 4px 10px rgba(15,23,42,0.08);border:3px solid ' + (idx === 0 ? '#16a34a' : '#e5e7eb') + ';transition:transform .2s ease,box-shadow .2s ease;';
+                    wrap.innerHTML = `
+                        <img src="${f.preview}" class="w-100 h-100" style="object-fit:cover;" alt="Fotoğraf ${idx+1}" />
+                        ${idx === 0 ? `<span class="position-absolute top-0 start-0 m-2 badge text-white rounded-pill shadow-sm px-2 py-1" style="background:linear-gradient(135deg,#16a34a,#047857);"><i class="bi bi-star-fill me-1"></i>Kapak</span>` : ''}
+                        <span class="position-absolute top-0 end-0 m-2 badge bg-black bg-opacity-75 rounded-pill px-2 py-1" style="backdrop-filter: blur(6px);">${idx+1}</span>
+                        <button type="button" data-sil="${idx}" class="position-absolute bottom-0 end-0 m-2 btn btn-sm rounded-pill text-white resim-sil-btn shadow-sm" aria-label="Sil" style="background:linear-gradient(135deg,#ef4444,#dc2626);border:0;width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;">
+                            <i class="bi bi-trash-fill fs-6"></i>
+                        </button>`;
+                    wrap.querySelector('.resim-sil-btn').addEventListener('click', () => {
+                        seciliDosyalar.splice(idx, 1);
+                        inputGuncelle();
+                        resimleriRenderEt();
+                    });
+                    onizlemeDiv.appendChild(wrap);
+                });
+            }
+            sayacSpan.textContent = seciliDosyalar.length;
+            sayacSpan.className = seciliDosyalar.length ? 'fw-bold text-danger' : 'fw-bold';
+            progressBar.style.width = Math.min(100, (seciliDosyalar.length / 5) * 100) + '%';
+        }
+
+        function inputGuncelle() {
+            const dt = new DataTransfer();
+            seciliDosyalar.forEach(f => dt.items.add(f.file));
+            inputResim.files = dt.files;
+        }
+
+        inputResim.addEventListener('change', e => {
+            const yeniDosyalar = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+            if (yeniDosyalar.length > 5) alert('En fazla 5 resim seçebilirsiniz. İlk 5 dosya alınacaktır.');
+            yeniDosyalar.slice(0, 5 - seciliDosyalar.length).forEach(f => {
+                if (seciliDosyalar.length >= 5) return;
+                const okuyucu = new FileReader();
+                okuyucu.onload = ev => seciliDosyalar.push({ file: f, preview: ev.target.result });
+                okuyucu.readAsDataURL(f);
+            });
+            setTimeout(resimleriRenderEt, 50);
+        });
+
+        /* ============ FORM DOGRULAMA ============ */
+        document.querySelector('form[method="post"]').addEventListener('submit', function (ev) {
+            kayipYeriGuncelle();
+            const ky = (document.getElementById('KayipYeri').value || '').trim();
+            if (!ky) {
+                const onay = confirm('Kaybolduğu yeri (haritadan) işaretlemediniz. Yine de gönderilsin mi?');
+                if (!onay) { ev.preventDefault(); map.invalidateSize(); window.scrollTo({ top: document.getElementById('harita').offsetTop - 100, behavior:'smooth' }); return false; }
+            }
+            return true;
+        });
+
+        setTimeout(() => map.invalidateSize(), 200);
+    })();
+</script>
+
 <style>
     .transition-hover {
         transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
     }
-
     .transition-hover:hover {
         transform: translateY(-2px);
         box-shadow: 0 12px 20px -8px rgba(22, 163, 74, .35) !important;
         filter: brightness(1.05);
     }
-
     .input-group-text {
         background: #f8fafc !important;
         border-right: 0 !important;
     }
-
     .form-control, .form-select {
         border-left: 0 !important;
     }
+    .resim-kart:hover {
+        transform: translateY(-3px) scale(1.035);
+        box-shadow: 0 12px 24px -8px rgba(15,23,42,0.18) !important;
+        z-index: 2;
+    }
+    .resim-sil-btn { transition: transform .15s ease, filter .15s ease; }
+    .resim-sil-btn:hover { transform: scale(1.15); filter: brightness(1.1); }
+    .leaflet-container { font-family: inherit; }
+    .leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: 0 10px 25px rgba(0,0,0,.12); }
 </style>
 
 @section Scripts {

@@ -101,9 +101,128 @@
                             </p>
                         </div>
                     }
+
+                    @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+                    {
+                        <div class="col-12">
+                            <label class="small text-muted mb-1 d-block">
+                                <i class="bi bi-pin-map-fill text-danger me-1"></i>
+                                Harita Koordinatları
+                            </label>
+                            <span class="badge text-bg-light border px-3 py-2 rounded-pill font-monospace">
+                                <i class="bi bi-geo-alt text-primary me-1"></i>
+                                @Model.Enlem.Value.ToString("F6") , @Model.Boylam.Value.ToString("F6")
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(Model.AdresDetayi))
+                            {
+                                <div class="mt-2 p-3 rounded-3"
+                                     style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdfa 100%);">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-signpost-split-fill text-primary fs-5 mt-1"></i>
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-semibold text-primary mb-1">Açık Adres</div>
+                                            <div class="small text-dark mb-0" style="line-height:1.55;">
+                                                @Model.AdresDetayi
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(Model.AdresDetayi))
+                    {
+                        <div class="col-12">
+                            <label class="small text-muted mb-1 d-block">
+                                <i class="bi bi-signpost-split-fill text-primary me-1"></i>
+                                Açık Adres
+                            </label>
+                            <div class="p-3 rounded-3" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdfa 100%);">
+                                <div class="small text-dark mb-0" style="line-height:1.55;">@Model.AdresDetayi</div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
+
+        @{
+            var basvuruResimleri = Model.Resimler?.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi).ToList() ?? new List<KayipBildirimiResim>();
+        }
+
+        @if (basvuruResimleri.Any())
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-1">
+                        <i class="bi bi-images text-success me-2"></i>
+                        Başvuruya Ait Fotoğraflar
+                        <span class="badge text-bg-success ms-2 rounded-pill">@basvuruResimleri.Count adet</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @for (int i = 0; i < basvuruResimleri.Count; i++)
+                        {
+                            var r = basvuruResimleri[i];
+                            var buyukYol = (!string.IsNullOrWhiteSpace(r.DosyaYolu) ? "/" + r.DosyaYolu.Replace("\\", "/") : "")!;
+                            var onizleme = !string.IsNullOrWhiteSpace(r.ThumbnailYolu) ? ("/" + r.ThumbnailYolu.Replace("\\", "/")) : buyukYol;
+                            <div class="col-6 col-md-4 col-lg-3">
+                                <a href="@buyukYol" target="_blank"
+                                   class="d-block text-decoration-none position-relative resim-kart"
+                                   style="overflow:hidden;border-radius:18px;box-shadow:0 6px 18px rgba(15,23,42,0.10);">
+                                    <img src="@onizleme"
+                                         alt="Başvuru Fotoğrafı @(i+1)"
+                                         class="img-fluid w-100 object-fit-cover"
+                                         style="aspect-ratio:1/1;display:block;cursor:zoom-in;" />
+                                    <div class="position-absolute top-2 start-2 d-flex gap-2">
+                                        <span class="badge text-bg-dark bg-opacity-80 rounded-pill px-2 py-1 small">
+                                            #@(i+1)
+                                        </span>
+                                        @if (r.VarsayilanResimMi)
+                                        {
+                                            <span class="badge text-bg-success rounded-pill px-2 py-1 small"
+                                                  style="box-shadow:0 4px 10px rgba(22,163,74,0.35);">
+                                                <i class="bi bi-star-fill me-1"></i>Kapak
+                                            </span>
+                                        }
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card border-dashed">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3">
+                        <i class="bi bi-image-fill text-muted fs-1 opacity-50"></i>
+                    </div>
+                    <h6 class="mb-1 text-muted">Bu başvuru için fotoğraf yüklenmemiş</h6>
+                    <small class="text-muted opacity-75">Vatandaş başvuru sırasında herhangi bir görsel eklememiş.</small>
+                </div>
+            </div>
+        }
+
+        @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-1">
+                        <i class="bi bi-map-fill text-danger me-2"></i>
+                        Kaybolduğu Konum (Harita)
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="harita"
+                         class="w-100"
+                         style="height:380px;min-height:380px;border-bottom-left-radius:0.5rem;border-bottom-right-radius:0.5rem;"></div>
+                </div>
+            </div>
+        }
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -295,3 +414,49 @@
     </div>
 
 </div>
+
+@section Scripts {
+    @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+    {
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+              integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+                integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script>
+            (function () {
+                var lat = @Model.Enlem.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lng = @Model.Boylam.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                window.addEventListener('DOMContentLoaded', function () {
+                    try {
+                        var map = L.map('harita', { scrollWheelZoom: false }).setView([lat, lng], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; OpenStreetMap'
+                        }).addTo(map);
+                        var marker = L.marker([lat, lng], { draggable: false }).addTo(map);
+                        var popupHtml = '<div style="min-width:180px;padding:4px 2px;"><strong style="color:#dc2626;"><i class="bi bi-geo-alt-fill me-1"></i>Kayıp Yeri</strong><div style="font-size:12px;color:#475569;margin-top:4px;">' +
+                            lat.toFixed(5) + ' , ' + lng.toFixed(5) + '</div></div>';
+                        marker.bindPopup(popupHtml, { closeButton: false, maxWidth: 300 }).openPopup();
+                        setTimeout(function () { map.invalidateSize(true); }, 250);
+                    } catch (err) {
+                        console.error('Harita yüklenirken hata:', err);
+                    }
+                });
+            })();
+        </script>
+    }
+
+    <style>
+        .resim-kart:hover img {
+            transform: scale(1.035);
+            transition: transform 0.25s ease;
+        }
+        .resim-kart img {
+            transition: transform 0.25s ease;
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px !important;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18) !important;
+        }
+    </style>
+}

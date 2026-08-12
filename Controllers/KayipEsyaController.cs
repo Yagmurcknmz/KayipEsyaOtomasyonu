@@ -1,9 +1,11 @@
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
+using KayipEsyaOtomasyonu.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace KayipEsyaOtomasyonu.Controllers
 {
@@ -12,13 +14,16 @@ namespace KayipEsyaOtomasyonu.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<KayipEsyaController> _logger;
+        private readonly IResimYuklemeServisi _resimServisi;
 
         public KayipEsyaController(
             ApplicationDbContext context,
-            ILogger<KayipEsyaController> logger)
+            ILogger<KayipEsyaController> logger,
+            IResimYuklemeServisi resimServisi)
         {
             _context = context;
             _logger = logger;
+            _resimServisi = resimServisi;
         }
 
         [HttpGet]
@@ -30,6 +35,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             var sorgu = _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi))
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(arama))
@@ -90,6 +96,7 @@ namespace KayipEsyaOtomasyonu.Controllers
         public async Task<IActionResult> Create(KayipEsya kayipEsya)
         {
             ModelState.Remove(nameof(KayipEsya.Kategori));
+            ModelState.Remove(nameof(KayipEsya.Resimler));
 
             if (kayipEsya.BulunmaTarihi.Date > DateTime.Today)
             {
@@ -153,6 +160,8 @@ namespace KayipEsyaOtomasyonu.Controllers
             kayipEsya.Aciklama =
                 MetniTemizle(kayipEsya.Aciklama);
 
+            kayipEsya.AdresDetayi = MetniTemizle(kayipEsya.AdresDetayi);
+
             kayipEsya.AktifMi = true;
 
             if (string.IsNullOrWhiteSpace(kayipEsya.Durum))
@@ -165,8 +174,52 @@ namespace KayipEsyaOtomasyonu.Controllers
                 await _context.KayipEsyalar.AddAsync(kayipEsya);
                 await _context.SaveChangesAsync();
 
+                var kullaniciId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var dosyalar = Request.Form.Files
+                    .Where(f =>
+                        f.Name.Equals("ResimDosyalari", StringComparison.OrdinalIgnoreCase) ||
+                        f.Name.Equals("ResimDosyalari[]", StringComparison.OrdinalIgnoreCase))
+                    .Take(5)
+                    .ToList();
+
+                if (dosyalar.Count > 0)
+                {
+                    var yuklemeler = await _resimServisi.CokluYukleAsync(
+                        dosyalar,
+                        "kayip-esya",
+                        300,
+                        20 * 1024 * 1024,
+                        kullaniciId);
+
+                    for (int i = 0; i < yuklemeler.Count; i++)
+                    {
+                        var y = yuklemeler[i];
+                        if (y.Basarili && !string.IsNullOrWhiteSpace(y.DosyaYolu))
+                        {
+                            _context.KayipEsyaResimler.Add(new KayipEsyaResim
+                            {
+                                KayipEsyaId = kayipEsya.Id,
+                                DosyaYolu = y.DosyaYolu!,
+                                ThumbnailYolu = y.ThumbnailYolu,
+                                SiraNumarasi = i,
+                                VarsayilanResimMi = i == 0,
+                                YukleyenKullaniciId = kullaniciId,
+                                YuklenmeTarihi = DateTime.Now,
+                                AktifMi = true
+                            });
+                        }
+                    }
+
+                    if (yuklemeler.Any(y => y.Basarili))
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 TempData["BasariliMesaj"] =
-                    "Kayıp eşya kaydı başarıyla oluşturuldu.";
+                    "Kayıp eşya kaydı başarıyla oluşturuldu." +
+                    (dosyalar.Count > 0 ? $" {dosyalar.Count} adet fotoğraf yüklendi." : "");
 
                 return RedirectToAction(nameof(Index));
             }
@@ -198,6 +251,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             var kayipEsyaDetay = await _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi))
                 .FirstOrDefaultAsync(x => x.Id == id.Value);
 
             if (kayipEsyaDetay == null)
@@ -217,7 +271,9 @@ namespace KayipEsyaOtomasyonu.Controllers
             }
 
             var kayipEsyaDuzenle =
-                await _context.KayipEsyalar.FindAsync(id.Value);
+                await _context.KayipEsyalar
+                    .Include(x => x.Resimler.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi))
+                    .FirstOrDefaultAsync(x => x.Id == id.Value);
 
             if (kayipEsyaDuzenle == null)
             {
@@ -234,7 +290,8 @@ namespace KayipEsyaOtomasyonu.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int id,
-            KayipEsya kayipEsya)
+            KayipEsya kayipEsya,
+            List<IFormFile>? ResimDosyalari)
         {
             if (id != kayipEsya.Id)
             {
@@ -242,6 +299,10 @@ namespace KayipEsyaOtomasyonu.Controllers
             }
 
             ModelState.Remove(nameof(KayipEsya.Kategori));
+            ModelState.Remove(nameof(KayipEsya.Resimler));
+            ModelState.Remove(nameof(KayipEsya.Enlem));
+            ModelState.Remove(nameof(KayipEsya.Boylam));
+            ModelState.Remove(nameof(KayipEsya.AdresDetayi));
 
             if (kayipEsya.BulunmaTarihi.Date > DateTime.Today)
             {
@@ -271,7 +332,9 @@ namespace KayipEsyaOtomasyonu.Controllers
             }
 
             var mevcutKayipEsya =
-                await _context.KayipEsyalar.FindAsync(id);
+                await _context.KayipEsyalar
+                    .Include(x => x.Resimler.Where(r => r.AktifMi))
+                    .FirstOrDefaultAsync(x => x.Id == id);
 
             if (mevcutKayipEsya == null)
             {
@@ -319,6 +382,10 @@ namespace KayipEsyaOtomasyonu.Controllers
             mevcutKayipEsya.Aciklama =
                 MetniTemizle(kayipEsya.Aciklama);
 
+            mevcutKayipEsya.Enlem = kayipEsya.Enlem;
+            mevcutKayipEsya.Boylam = kayipEsya.Boylam;
+            mevcutKayipEsya.AdresDetayi = MetniTemizle(kayipEsya.AdresDetayi);
+
             mevcutKayipEsya.Durum =
                 kayipEsya.Durum;
 
@@ -330,6 +397,59 @@ namespace KayipEsyaOtomasyonu.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                var ekDosyalar = (ResimDosyalari ?? Enumerable.Empty<IFormFile>())
+                    .Concat(Request.Form.Files
+                        .Where(f =>
+                            f.Name.Equals("ResimDosyalari", StringComparison.OrdinalIgnoreCase) ||
+                            f.Name.Equals("ResimDosyalari[]", StringComparison.OrdinalIgnoreCase)))
+                    .DistinctBy(f => f.FileName + f.Length)
+                    .Where(f => f.Length > 0)
+                    .ToList();
+
+                if (ekDosyalar.Count > 0)
+                {
+                    var mevcutResimSayisi = mevcutKayipEsya.Resimler?.Count ?? 0;
+                    var kapasite = Math.Max(0, 5 - mevcutResimSayisi);
+                    if (kapasite > 0)
+                    {
+                        var yuklenecekler = ekDosyalar.Take(kapasite).ToList();
+                        var yukleyenKullaniciId = User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+
+                        var yuklemeler = await _resimServisi.CokluYukleAsync(
+                            yuklenecekler,
+                            "kayip-esya",
+                            300,
+                            20 * 1024 * 1024,
+                            yukleyenKullaniciId);
+
+                        var yeniSira = mevcutResimSayisi;
+                        var ilkKayitMi = mevcutResimSayisi == 0;
+                        for (int i = 0; i < yuklemeler.Count; i++)
+                        {
+                            var y = yuklemeler[i];
+                            if (y.Basarili && !string.IsNullOrWhiteSpace(y.DosyaYolu))
+                            {
+                                _context.KayipEsyaResimler.Add(new KayipEsyaResim
+                                {
+                                    KayipEsyaId = mevcutKayipEsya.Id,
+                                    DosyaYolu = y.DosyaYolu!,
+                                    ThumbnailYolu = y.ThumbnailYolu,
+                                    SiraNumarasi = yeniSira++,
+                                    VarsayilanResimMi = ilkKayitMi && i == 0,
+                                    YukleyenKullaniciId = yukleyenKullaniciId,
+                                    YuklenmeTarihi = DateTime.Now,
+                                    AktifMi = true
+                                });
+                            }
+                        }
+
+                        if (yuklemeler.Any(y => y.Basarili))
+                        {
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
 
                 TempData["BasariliMesaj"] =
                     "Kayıp eşya kaydı başarıyla güncellendi.";

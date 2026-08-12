@@ -59,6 +59,7 @@
                       asp-action="Edit"
                       asp-route-id="@Model.Id"
                       method="post"
+                      enctype="multipart/form-data"
                       novalidate>
 
                     <input type="hidden" asp-for="Id" />
@@ -370,6 +371,171 @@
 
                     </div>
 
+                    <!-- #################### ADIM 3: RESIMLER (MEVCUT + YENI YUKLEME) #################### -->
+                    @{
+                        var kayipEsyaResimleri = Model.Resimler?.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi).ToList() ?? new List<KayipEsyaResim>();
+                        var kalanKapasite = Math.Max(0, 5 - kayipEsyaResimleri.Count);
+                    }
+                    <div class="card rounded-4 shadow-sm mt-4">
+                        <div class="card-header py-3 border-bottom-0">
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <h6 class="mb-0 fw-semibold text-success">
+                                    <i class="bi bi-images me-2 fs-5"></i>
+                                    Fotoğraflar
+                                    <span class="badge rounded-pill text-bg-success ms-2">@kayipEsyaResimleri.Count / 5</span>
+                                </h6>
+                                <small class="text-muted opacity-75">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    JPG / PNG format, en fazla 20 MB
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            @if (kayipEsyaResimleri.Any())
+                            {
+                                <div class="row g-3 mt-2 mb-4">
+                                    @for (int i = 0; i < kayipEsyaResimleri.Count; i++)
+                                    {
+                                        var r = kayipEsyaResimleri[i];
+                                        var buyukYol = (!string.IsNullOrWhiteSpace(r.DosyaYolu) ? "/" + r.DosyaYolu.Replace("\\", "/") : "")!;
+                                        var onizleme = !string.IsNullOrWhiteSpace(r.ThumbnailYolu) ? ("/" + r.ThumbnailYolu.Replace("\\", "/")) : buyukYol;
+                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                            <div class="position-relative resim-kart"
+                                                 style="overflow:hidden;border-radius:16px;box-shadow:0 4px 14px rgba(15,23,42,0.10);">
+                                                <a href="@buyukYol" target="_blank" class="d-block">
+                                                    <img src="@onizleme"
+                                                         alt="Fotoğraf @(i+1)"
+                                                         class="w-100 img-fluid object-fit-cover"
+                                                         style="aspect-ratio:1/1;display:block;" />
+                                                </a>
+                                                <div class="position-absolute top-2 start-2 d-flex gap-2">
+                                                    <span class="badge text-bg-dark bg-opacity-80 rounded-pill px-2 py-1 small">#@(i+1)</span>
+                                                    @if (r.VarsayilanResimMi)
+                                                    {
+                                                        <span class="badge text-bg-success rounded-pill px-2 py-1 small">
+                                                            <i class="bi bi-star-fill me-1"></i>Kapak
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-light border-dashed rounded-3 text-center mt-2 mb-4 py-4">
+                                    <i class="bi bi-image text-muted opacity-50 fs-2"></i>
+                                    <div class="small text-muted mt-2 mb-0">Henüz fotoğraf yüklenmemiş. Aşağıdan yeni fotoğraf ekleyebilirsiniz.</div>
+                                </div>
+                            }
+
+                            @if (kalanKapasite > 0)
+                            {
+                                <label class="form-label fw-semibold small text-uppercase text-muted mb-2">
+                                    Yeni Fotoğraf Yükle <span class="text-muted fw-normal opacity-75 text-lowercase">(en fazla @kalanKapasite adet)</span>
+                                </label>
+                                <div class="p-4 rounded-3"
+                                     style="border:2px dashed #fca5a5;background:linear-gradient(135deg,#fff1f2 0%,#fff7ed 100%);">
+                                    <div class="row align-items-center g-3">
+                                        <div class="col-sm-9">
+                                            <input type="file"
+                                                   id="ResimDosyalari"
+                                                   name="ResimDosyalari"
+                                                   accept="image/*"
+                                                   multiple
+                                                   class="form-control form-control-lg rounded-3 border-0 bg-white shadow-sm" />
+                                            <div id="yuklenenSayac" class="small text-muted mt-2 ms-1">
+                                                <i class="bi bi-check2-circle me-1 text-success"></i>
+                                                Henüz dosya seçilmedi
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3 d-grid">
+                                            <button type="button" onclick="document.getElementById('ResimDosyalari').click();"
+                                                    class="btn btn-danger btn-lg rounded-3 shadow-sm fw-semibold"
+                                                    style="background:linear-gradient(90deg,#ef4444,#f97316);border:none;">
+                                                <i class="bi bi-cloud-arrow-up-fill me-1"></i>
+                                                Seç
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-3" style="height:7px;">
+                                        <div id="resimProgress" class="progress-bar rounded-pill"
+                                             style="background:linear-gradient(90deg,#ef4444,#f97316);width:0%;"></div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info rounded-3 text-center mb-0 small">
+                                    <i class="bi bi-folder-symlink me-1"></i>
+                                    Fotoğraf limiti (<strong>5</strong>) doldu. Yeni fotoğraf ekleyebilmek için mevcut olanlardan birini silmelisiniz.
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- #################### ADIM 4: KONUM (BULUNDUGU YER - MAP + ADRES) #################### -->
+                    <div class="card rounded-4 shadow-sm mt-4">
+                        <div class="card-header py-3 border-bottom-0">
+                            <h6 class="mb-0 fw-semibold text-danger">
+                                <i class="bi bi-geo-alt-fill me-2 fs-5"></i>
+                                Bulunduğu Konum & Adres
+                            </h6>
+                        </div>
+                        <div class="card-body pt-0">
+                            <input type="hidden" asp-for="Enlem" id="Enlem" />
+                            <input type="hidden" asp-for="Boylam" id="Boylam" />
+
+                            <div id="konumOnizleme"
+                                 class="p-3 mb-3 rounded-3 d-flex align-items-center gap-3"
+                                 style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdfa 100%);">
+                                <span class="badge rounded-pill px-3 py-2 d-inline-flex align-items-center gap-2"
+                                      style="background:#dbeafe;color:#1d4ed8;">
+                                    <i class="bi bi-geo-alt-fill fs-5"></i>
+                                </span>
+                                <div class="flex-grow-1">
+                                    <div id="konumDurum" class="small fw-semibold text-primary mb-1">
+                                        @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+                                        {
+                                            <text>Konum daha önce kaydedilmiş ✓</text>
+                                        }
+                                        else
+                                        {
+                                            <text>Haritadan tıklayarak konumu işaretleyin</text>
+                                        }
+                                    </div>
+                                    <div id="konumKoordinat" class="small text-muted mb-0 font-monospace">
+                                        @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+                                        {
+                                            <text>@Model.Enlem.Value.ToString("F6") , @Model.Boylam.Value.ToString("F6")</text>
+                                        }
+                                        else
+                                        {
+                                            <text>Henüz konum seçilmedi</text>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="harita"
+                                 class="rounded-3 border"
+                                 style="height:320px;min-height:320px;"></div>
+
+                            <div class="mt-4">
+                                <label asp-for="AdresDetayi" class="form-label fw-semibold small text-uppercase text-muted mb-2">
+                                    Açık Adres / Tarif
+                                    <span class="text-muted fw-normal opacity-75 text-lowercase ms-1">(isteğe bağlı)</span>
+                                </label>
+                                <textarea asp-for="AdresDetayi"
+                                          rows="3"
+                                          class="form-control rounded-3"
+                                          placeholder="Örn: İstanbul Cad. no:123 A Blok Kat:2 Daire:5 - Mahalle: Cumhuriyet"></textarea>
+                                <span asp-validation-for="AdresDetayi" class="text-danger small d-block mt-1"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- #################### FORM FOOTER (BUTONLAR) #################### -->
                     <div class="card-footer bg-white border-0 border-top rounded-4 mt-2 pt-4 px-0 d-flex justify-content-sm-end justify-content-between align-items-center flex-wrap gap-2">
 
@@ -419,4 +585,120 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        (function () {
+            var inputEnlem = document.getElementById('Enlem');
+            var inputBoylam = document.getElementById('Boylam');
+            var konumPanel = document.getElementById('konumOnizleme');
+            var durumEl = document.getElementById('konumDurum');
+            var koordinatEl = document.getElementById('konumKoordinat');
+            var fileInput = document.getElementById('ResimDosyalari');
+            var sayacEl = document.getElementById('yuklenenSayac');
+            var progressEl = document.getElementById('resimProgress');
+
+            function panelGuncelle(lat, lng) {
+                if (lat !== null && lng !== null) {
+                    konumPanel.style.background = 'linear-gradient(135deg,#dcfce7 0%,#f0fdfa 100%)';
+                    var span = konumPanel.querySelector('.rounded-pill');
+                    if (span) {
+                        span.style.background = '#bbf7d0';
+                        span.style.color = '#166534';
+                        span.innerHTML = '<i class="bi bi-check-circle-fill fs-5"></i>';
+                    }
+                    durumEl.textContent = 'Konum başarıyla işaretlendi ✓';
+                    durumEl.className = durumEl.className.replace('text-primary', 'text-success');
+                    if (!durumEl.classList.contains('text-success')) durumEl.classList.add('text-success');
+                    koordinatEl.textContent = lat.toFixed(6) + ' , ' + lng.toFixed(6);
+                } else {
+                    konumPanel.style.background = 'linear-gradient(135deg,#eff6ff 0%,#f0fdfa 100%)';
+                    var span2 = konumPanel.querySelector('.rounded-pill');
+                    if (span2) {
+                        span2.style.background = '#dbeafe';
+                        span2.style.color = '#1d4ed8';
+                        span2.innerHTML = '<i class="bi bi-geo-alt-fill fs-5"></i>';
+                    }
+                    durumEl.textContent = 'Haritadan tıklayarak konumu işaretleyin';
+                    koordinatEl.textContent = 'Henüz konum seçilmedi';
+                }
+            }
+
+            window.addEventListener('DOMContentLoaded', function () {
+                var initLat = (inputEnlem && inputEnlem.value && !isNaN(parseFloat(inputEnlem.value))) ? parseFloat(inputEnlem.value) : 39.9334;
+                var initLng = (inputBoylam && inputBoylam.value && !isNaN(parseFloat(inputBoylam.value))) ? parseFloat(inputBoylam.value) : 32.8597;
+                var hasInitial = inputEnlem && inputEnlem.value && !isNaN(parseFloat(inputEnlem.value)) && inputBoylam && inputBoylam.value && !isNaN(parseFloat(inputBoylam.value));
+
+                try {
+                    var map = L.map('harita', { scrollWheelZoom: false }).setView([initLat, initLng], hasInitial ? 15 : 6);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(map);
+
+                    var marker = null;
+                    if (hasInitial) {
+                        marker = L.marker([initLat, initLng], { draggable: true, autoPan: true }).addTo(map);
+                        marker.bindPopup('<div style="padding:4px 2px;"><strong style="color:#16a34a;"><i class="bi bi-pin-map-fill me-1"></i>Bulunduğu Konum</strong><div style="font-size:12px;color:#64748b;margin-top:4px;">Konumu taşıyarak düzeltebilirsiniz</div></div>', { closeButton: false, maxWidth: 280 }).openPopup();
+                        marker.on('dragend', function () {
+                            var p = marker.getLatLng();
+                            inputEnlem.value = p.lat;
+                            inputBoylam.value = p.lng;
+                            panelGuncelle(p.lat, p.lng);
+                        });
+                        panelGuncelle(initLat, initLng);
+                    }
+
+                    map.on('click', function (e) {
+                        inputEnlem.value = e.latlng.lat;
+                        inputBoylam.value = e.latlng.lng;
+                        if (marker) {
+                            marker.setLatLng(e.latlng);
+                        } else {
+                            marker = L.marker(e.latlng, { draggable: true, autoPan: true }).addTo(map);
+                            marker.on('dragend', function () {
+                                var p2 = marker.getLatLng();
+                                inputEnlem.value = p2.lat;
+                                inputBoylam.value = p2.lng;
+                                panelGuncelle(p2.lat, p2.lng);
+                            });
+                        }
+                        if (!marker.isPopupOpen()) {
+                            marker.bindPopup('<div style="padding:4px 2px;"><strong style="color:#16a34a;"><i class="bi bi-pin-map-fill me-1"></i>Bulunduğu Konum</strong><div style="font-size:12px;color:#64748b;margin-top:4px;">Konumu taşıyarak düzeltebilirsiniz</div></div>', { closeButton: false, maxWidth: 280 }).openPopup();
+                        }
+                        panelGuncelle(e.latlng.lat, e.latlng.lng);
+                    });
+
+                    setTimeout(function () { map.invalidateSize(true); }, 200);
+                } catch (err) {
+                    console.error('Harita yüklenirken hata:', err);
+                }
+
+                if (fileInput) {
+                    fileInput.addEventListener('change', function () {
+                        var n = this.files ? this.files.length : 0;
+                        if (sayacEl) {
+                            if (n > 0) {
+                                sayacEl.innerHTML = '<i class="bi bi-check2-circle me-1 text-success"></i>' + n + ' dosya seçildi';
+                            } else {
+                                sayacEl.innerHTML = '<i class="bi bi-check2-circle me-1 text-success"></i>Henüz dosya seçilmedi';
+                            }
+                        }
+                        if (progressEl) {
+                            var oran = Math.min(100, (n / 5) * 100);
+                            progressEl.style.width = oran + '%';
+                        }
+                    });
+                }
+            });
+        })();
+    </script>
+    <style>
+        .resim-kart:hover img { transform: scale(1.035); transition: transform 0.25s ease; }
+        .resim-kart img { transition: transform 0.25s ease; }
+        .leaflet-popup-content-wrapper { border-radius: 14px !important; box-shadow: 0 10px 28px rgba(15,23,42,0.18) !important; }
+    </style>
 }

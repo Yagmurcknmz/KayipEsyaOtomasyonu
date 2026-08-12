@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Claims;
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
+using KayipEsyaOtomasyonu.Services;
 using KayipEsyaOtomasyonu.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,13 +16,16 @@ namespace KayipEsyaOtomasyonu.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<KayipBildirimiController> _logger;
+        private readonly IResimYuklemeServisi _resimServisi;
 
         public KayipBildirimiController(
             ApplicationDbContext context,
-            ILogger<KayipBildirimiController> logger)
+            ILogger<KayipBildirimiController> logger,
+            IResimYuklemeServisi resimServisi)
         {
             _context = context;
             _logger = logger;
+            _resimServisi = resimServisi;
         }
 
         [HttpGet]
@@ -39,9 +43,16 @@ namespace KayipEsyaOtomasyonu.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Vatandas")]
         public async Task<IActionResult> Create(
             KayipBildirimiOlusturViewModel viewModel)
         {
+            ModelState.Remove(nameof(viewModel.KayipYeri));
+            ModelState.Remove(nameof(viewModel.ResimDosyalari));
+            ModelState.Remove(nameof(viewModel.Enlem));
+            ModelState.Remove(nameof(viewModel.Boylam));
+            ModelState.Remove(nameof(viewModel.AdresDetayi));
+
             var vatandasId =
                 User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -80,6 +91,18 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return View(viewModel);
             }
 
+            var kayipYeriTemiz = (viewModel.KayipYeri ?? string.Empty).Trim();
+            var adresTemiz = BosIseNull(viewModel.AdresDetayi);
+            if (string.IsNullOrWhiteSpace(kayipYeriTemiz) && !string.IsNullOrWhiteSpace(adresTemiz))
+            {
+                kayipYeriTemiz = adresTemiz.Length <= 180 ? adresTemiz : adresTemiz.Substring(0, 180);
+            }
+            if (string.IsNullOrWhiteSpace(kayipYeriTemiz) && viewModel.Enlem.HasValue && viewModel.Boylam.HasValue)
+            {
+                kayipYeriTemiz = $"Harita Konumu ({viewModel.Enlem.Value:F4}, {viewModel.Boylam.Value:F4})";
+            }
+            if (kayipYeriTemiz.Length > 200) kayipYeriTemiz = kayipYeriTemiz.Substring(0, 200);
+
             var kayipBildirimi = new KayipBildirimi
             {
                 BasvuruNo = await BasvuruNumarasiOlustur(),
@@ -93,13 +116,17 @@ namespace KayipEsyaOtomasyonu.Controllers
                 Renk = BosIseNull(viewModel.Renk),
 
                 KayipTarihi = viewModel.KayipTarihi.Date,
-                KayipYeri = viewModel.KayipYeri.Trim(),
+                KayipYeri = kayipYeriTemiz,
 
                 AyirtEdiciOzellik =
                     BosIseNull(viewModel.AyirtEdiciOzellik),
 
                 Aciklama =
                     BosIseNull(viewModel.Aciklama),
+
+                Enlem = viewModel.Enlem,
+                Boylam = viewModel.Boylam,
+                AdresDetayi = adresTemiz,
 
                 Durum = "Yeni Başvuru",
                 BasvuruTarihi = DateTime.Now,
@@ -114,10 +141,54 @@ namespace KayipEsyaOtomasyonu.Controllers
 
                 await _context.SaveChangesAsync();
 
+                var dosyalar = (viewModel.ResimDosyalari ?? Enumerable.Empty<IFormFile>())
+                    .Concat(Request.Form.Files
+                        .Where(f =>
+                            f.Name.Equals("ResimDosyalari", StringComparison.OrdinalIgnoreCase) ||
+                            f.Name.Equals("ResimDosyalari[]", StringComparison.OrdinalIgnoreCase)))
+                    .DistinctBy(f => f.FileName + f.Length)
+                    .Take(5)
+                    .ToList();
+
+                if (dosyalar.Count > 0)
+                {
+                    var yuklemeler = await _resimServisi.CokluYukleAsync(
+                        dosyalar,
+                        "kayip-basvuru",
+                        300,
+                        20 * 1024 * 1024,
+                        vatandasId);
+
+                    for (int i = 0; i < yuklemeler.Count; i++)
+                    {
+                        var y = yuklemeler[i];
+                        if (y.Basarili && !string.IsNullOrWhiteSpace(y.DosyaYolu))
+                        {
+                            _context.KayipBildirimiResimler.Add(new KayipBildirimiResim
+                            {
+                                KayipBildirimiId = kayipBildirimi.Id,
+                                DosyaYolu = y.DosyaYolu!,
+                                ThumbnailYolu = y.ThumbnailYolu,
+                                SiraNumarasi = i,
+                                VarsayilanResimMi = i == 0,
+                                YukleyenKullaniciId = vatandasId,
+                                YuklenmeTarihi = DateTime.Now,
+                                AktifMi = true
+                            });
+                        }
+                    }
+
+                    if (yuklemeler.Any(y => y.Basarili))
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 TempData["BasariliMesaj"] =
                     $"Başvurunuz başarıyla kaydedildi. " +
                     $"Başvuru numaranız: {kayipBildirimi.BasvuruNo}. " +
-                    $"Aşağıda bulunan eşyalar arasında aramanız yapılmıştır, sonuçları inceleyiniz.";
+                    $"Aşağıda bulunan eşyalar arasında aramanız yapılmıştır, sonuçları inceleyiniz." +
+                    (dosyalar.Count > 0 ? $" ({dosyalar.Count} fotoğraf yüklendi.)" : "");
 
                 return RedirectToAction(
                     "BulunanEsyalar",
@@ -158,6 +229,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             var basvurular = await _context.KayipBildirimleri
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi))
                 .Where(x =>
                     x.VatandasId == vatandasId &&
                     x.AktifMi)
@@ -186,6 +258,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             var basvuru = await _context.KayipBildirimleri
                 .AsNoTracking()
                 .Include(x => x.Kategori)
+                .Include(x => x.Resimler.Where(r => r.AktifMi).OrderBy(r => r.SiraNumarasi))
                 .FirstOrDefaultAsync(x =>
                     x.Id == id.Value &&
                     x.VatandasId == vatandasId &&

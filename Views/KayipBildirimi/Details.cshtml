@@ -107,6 +107,39 @@
 
                 </div>
 
+                @if (Model.Resimler != null && Model.Resimler.Any(r => r.AktifMi))
+                {
+                    <hr class="my-4" />
+                    <h6 class="fw-semibold mb-3 text-danger"><i class="bi bi-images me-2"></i> Eşya Fotoğrafları (@(Model.Resimler.Count(r => r.AktifMi)))</h6>
+                    <div class="d-flex flex-wrap gap-3 mb-3">
+                        @foreach (var r in Model.Resimler.Where(rr => rr.AktifMi))
+                        {
+                            <a href="@r.DosyaYolu" target="_blank" class="rounded-3 overflow-hidden border shadow-sm position-relative" style="width:100px;height:100px;display:block;">
+                                <img src="@(string.IsNullOrWhiteSpace(r.ThumbnailYolu) ? r.DosyaYolu : r.ThumbnailYolu)" class="w-100 h-100" style="object-fit:cover;" alt="Resim" />
+                            </a>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.AdresDetayi) || (Model.Enlem.HasValue && Model.Boylam.HasValue))
+                {
+                    <hr class="my-4" />
+                    <h6 class="fw-semibold mb-3" style="color:#0ea5e9;"><i class="bi bi-geo-alt-fill me-2"></i> Kaybolduğu Yer</h6>
+                    @if (!string.IsNullOrWhiteSpace(Model.AdresDetayi))
+                    {
+                        <div class="alert alert-info bg-opacity-10 border-info border-opacity-25 rounded-4 mb-3">
+                            <i class="bi bi-signpost-2-fill me-2 text-info"></i>
+                            <strong class="text-dark">Adres:</strong> @Model.AdresDetayi
+                        </div>
+                    }
+                    @if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+                    {
+                        <div class="rounded-4 overflow-hidden border shadow-sm">
+                            <div id="haritaDetay" style="height:300px;"></div>
+                        </div>
+                    }
+                }
+
                 <hr class="my-4" />
 
                 <div class="d-flex justify-content-end gap-2">
@@ -126,3 +159,18 @@
 
     </div>
 </div>
+
+@if (Model.Enlem.HasValue && Model.Boylam.HasValue)
+{
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function(){
+            const enlem = @Model.Enlem.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            const boylam = @Model.Boylam.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            const map = L.map('haritaDetay').setView([enlem, boylam], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+            L.marker([enlem, boylam]).addTo(map).bindPopup('<b style="font-size:13px;">Kaybolduğu Yer</b><br/><small class="text-muted">@(Model.EsyaAdi.Replace("'","\\'"))</small>').openPopup();
+        })();
+    </script>
+}

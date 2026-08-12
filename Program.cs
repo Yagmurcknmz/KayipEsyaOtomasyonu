@@ -1,6 +1,7 @@
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
 using KayipEsyaOtomasyonu.Services;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,15 @@ builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection(nameof(SmtpSettings)));
 
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<IResimYuklemeServisi, ResimYuklemeServisi>();
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
+    options.ValueLengthLimit = int.MaxValue;
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
