@@ -57,6 +57,24 @@
     <link rel="stylesheet"
           href="~/css/site.css"
           asp-append-version="true" />
+
+    @* Bildirim (Toast) meta etiketleri — sayfa acilirca site.js tarafindan otomatik toast gosterilir *@
+    @if (TempData["BasariliMesaj"] != null)
+    {
+        <meta name="x-toast-success" content="@TempData["BasariliMesaj"]!.ToString()" />
+    }
+    @if (TempData["HataMesaji"] != null)
+    {
+        <meta name="x-toast-error" content="@TempData["HataMesaji"]!.ToString()" />
+    }
+    @if (TempData["UyariMesaji"] != null)
+    {
+        <meta name="x-toast-warning" content="@TempData["UyariMesaji"]!.ToString()" />
+    }
+    @if (TempData["BilgiMesaji"] != null)
+    {
+        <meta name="x-toast-info" content="@TempData["BilgiMesaji"]!.ToString()" />
+    }
 </head>
 
 <body class="citizen-body">
@@ -287,12 +305,15 @@
         </div>
     </header>
 
-    <main class="citizen-main">
+    <main class="citizen-main page-fade">
         <div class="container">
 
+            @* TempData — Geriye donuk uyumlu: Eger JS devre disi ise görünür (alert), JS varsa site.js toast donusturur ve siler *@
             @if (TempData["BasariliMesaj"] != null)
             {
-                <div class="alert alert-success alert-dismissible fade show"
+                <div class="alert alert-success alert-dismissible fade show shadow-sm"
+                     data-convert-toast="true"
+                     style="display:none;"
                      role="alert">
 
                     <i class="bi bi-check-circle-fill me-2"></i>
@@ -301,7 +322,8 @@
 
                     <button type="button"
                             class="btn-close"
-                            data-bs-dismiss="alert">
+                            data-bs-dismiss="alert"
+                            aria-label="Kapat">
                     </button>
 
                 </div>
@@ -309,7 +331,9 @@
 
             @if (TempData["HataMesaji"] != null)
             {
-                <div class="alert alert-danger alert-dismissible fade show"
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm"
+                     data-convert-toast="true"
+                     style="display:none;"
                      role="alert">
 
                     <i class="bi bi-exclamation-circle-fill me-2"></i>
@@ -318,7 +342,8 @@
 
                     <button type="button"
                             class="btn-close"
-                            data-bs-dismiss="alert">
+                            data-bs-dismiss="alert"
+                            aria-label="Kapat">
                     </button>
 
                 </div>
@@ -350,6 +375,16 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @* SweetAlert2 - Modern onay pencereleri (data-swal-confirm attribute ile otomatik kullanilir) *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.12.4/dist/sweetalert2.all.min.js"
+            asp-fallback-src="~/lib/sweetalert2/sweetalert2.all.min.js"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
 
     <script>
             const citizenMenuButton =

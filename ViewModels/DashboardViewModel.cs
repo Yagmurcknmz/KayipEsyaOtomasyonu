@@ -46,6 +46,8 @@ namespace KayipEsyaOtomasyonu.ViewModels
         public string Durum { get; set; } = string.Empty;
         public int Adet { get; set; }
         public string Renk { get; set; } = "bg-primary";
+        public string GradientSol { get; set; } = "#ffffff";
+        public string GradientSag { get; set; } = "#f8fafc";
     }
 
     public class GunlukVeriNoktasi

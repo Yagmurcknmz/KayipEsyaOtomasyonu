@@ -79,32 +79,22 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return View(model);
             }
 
+            // EmailConfirmed=false olan ESKI kayitlar (mail degistirme sonrasi, eski kullanicilar veya admin/personel):
+            // Artik girise ENGEL OLMAYALIM (kullanici giris yapsin).
+            // SADECE kullaniciya UYARI goster (bilgilendirme) — girise izin ver.
             if (!kullanici.EmailConfirmed)
             {
                 var kullaniciRolleri = await _userManager.GetRolesAsync(kullanici);
                 var yoneticiMi = kullaniciRolleri.Contains("Admin") || kullaniciRolleri.Contains("Personel");
 
-                if (!yoneticiMi)
-                {
-                    var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(kullanici);
-                    var callbackUrl = Url.Action(
-                        nameof(ConfirmEmail),
-                        "Account",
-                        new { userId = kullanici.Id, token = confirmToken },
-                        protocol: HttpContext.Request.Scheme);
+                string uyariMesaji = yoneticiMi
+                    ? "⚠️ Yönetici hesabınız için e-posta doğrulaması tamamlanmamış. Girişe izin verildi, fakat lütfen Profilim > E-posta doğrulamasını en kısa sürede tamamlayın."
+                    : "ℹ️ Hesabınızın e-posta doğrulaması henüz tamamlanmamış. Girişe izin verildi. Güvenliğiniz için Profilim menüsünden doğrulama adımını tamamlamanız önerilir.";
 
-                    ViewBag.ResendEmail = kullanici.Email ?? string.Empty;
-                    ViewBag.ResendCallback = callbackUrl != null;
-
-                    ModelState.AddModelError(
-                        string.Empty,
-                        "Bu e-posta adresi henüz doğrulanmamıştır. Giriş yapabilmek için lütfen e-postanıza gönderilen doğrulama linkine tıklayın. Yukarıdaki linkten tekrar doğrulama e-postası gönderin.");
-                    return View(model);
-                }
-
-                ModelState.AddModelError(
-                    string.Empty,
-                    "⚠️ Yönetici (Admin/Personel) hesabınız için e-posta doğrulaması atlandı (güvenlik). Lütfen mümkün olan en kısa sürede Profilim > E-posta doğrulamasını tamamlayın.");
+                // Sadece bir kez uyar — TempData yerine ViewData aracılığı ile (view'da goster)
+                // (Aksi takdirde IsNotAllowed/NotAllowed error dönebilir ama Program.cs ile engellendigi icin girise izin verilecek).
+                ViewBag.EmailConfirmUyari = uyariMesaji;
+                // İLERIDE: Profilim > Mail değiştirme akışında zaten EmailConfirmed=false edilir ve mail gönderilir, ConfirmEmailChange ile onaylanınca true döner.
             }
 
             var sonuc = await _signInManager.PasswordSignInAsync(
@@ -202,7 +192,9 @@ namespace KayipEsyaOtomasyonu.Controllers
             {
                 UserName = email,
                 Email = email,
-                EmailConfirmed = false,
+                // Kayit sirasinda e-posta dogrulamasini OTOMATIK tamamla (kullanici beklemesin, direkt giris yapsin).
+                // Sifre degistirme / E-posta DEGISTIRME islemleri icin dogrulama zorunlu olmaya devam eder.
+                EmailConfirmed = true,
                 PhoneNumber = model.Telefon.Trim(),
 
                 Ad = model.Ad.Trim(),
@@ -246,37 +238,12 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return View(model);
             }
 
-            try
-            {
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(vatandas);
-                var callbackUrl = Url.Action(
-                    nameof(ConfirmEmail),
-                    "Account",
-                    new { userId = vatandas.Id, token },
-                    protocol: HttpContext.Request.Scheme);
-
-                var html = EmailSablonuOlustur(
-                    baslik: "E-posta Adresinizi Doğrulayın",
-                    govde: $"<p>Merhaba <strong>{vatandas.Ad} {vatandas.Soyad}</strong>,</p>" +
-                           $"<p>Kayıp Eşya Yönetim Sistemine kayıt olduğunuz için teşekkür ederiz.</p>" +
-                           $"<p>Hesabınızı doğrulamak ve giriş yapmak için aşağıdaki bağlantıya tıklayın:</p>" +
-                           $"<p style=\"text-align:center;\"><a class=\"btn\" href=\"{callbackUrl}\" style=\"padding:12px 26px;background:#0b5cff;color:white;border-radius:8px;text-decoration:none;font-weight:600;\">E-postayı Doğrula ve Hesabı Aktif Et</a></p>" +
-                           $"<p style=\"color:#64748b;font-size:12px;\">Bu link 24 saat süreyle geçerlidir. Bağlantıyı tıklayamıyorsanız adresi tarayıcınıza yapıştırın:<br><code>{callbackUrl}</code></p>" +
-                           $"<p>Eğer bu kaydı siz oluşturmadıysanız bu e-postayı dikkate almayınız.</p>");
-
-                await _emailSender.SendEmailAsync(
-                    vatandas.Email!,
-                    "Kayıp Eşya Sistemi - E-posta Doğrulama",
-                    html);
-            }
-            catch (Exception ex)
-            {
-                TempData["HataMesaji"] =
-                    "Hesabınız oluşturuldu fakat doğrulama e-postası gönderilemedi. E-posta sağlayıcı ayarlarınızı kontrol edin veya yöneticinizle iletişime geçin. Hata: " + ex.Message;
-            }
+            // KAYIT SIRASINDA e-posta dogrulama maili GONDERILMIYOR (kullanici direkt giris yapsın).
+            // Sadece: Profilim > E-posta DEGISTIRME / Sifre SIFIRLAMA islemlerinde dogrulama maili gonderilecek
+            // (ChangeEmail / ForgotPassword action'ları degistirilmedi — aynı şekilde calısmaya devam eder).
 
             TempData["BasariliMesaj"] =
-                $"Hesabınız başarıyla oluşturuldu. Giriş yapabilmek için lütfen {vatandas.Email} adresinize gönderilen doğrulama linkine tıklayın. E-posta gelmediğinde alt kısımdaki 'Doğrulama E-postasını Tekrar Gönder' bağlantısını kullanabilirsiniz.";
+                $"Hoş geldiniz! Hesabınız başarıyla oluşturuldu ve e-posta doğrulaması otomatik olarak tamamlandı. {vatandas.Email} adresinizle hemen giriş yapabilirsiniz. ⚠️ Profilim menüsünden ileride e-postanızı değiştirirseniz yeniden doğrulama gerekecektir.";
 
             return RedirectToAction(nameof(Login));
         }

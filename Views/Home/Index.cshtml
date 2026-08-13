@@ -1,4 +1,4 @@
-﻿@model KayipEsyaOtomasyonu.ViewModels.DashboardViewModel
+@model KayipEsyaOtomasyonu.ViewModels.DashboardViewModel
 
 @{
     ViewData["Title"] = "Ana Sayfa";
@@ -407,14 +407,21 @@
 
 <div class="row g-4">
 
-    <div class="col-xl-6">
+    <div class="col-xl-12">
         <div class="card h-100">
 
-            <div class="card-header">
-                <h5 class="mb-1">Duruma Göre Dağılım</h5>
-                <small class="text-muted">
-                    Kayıp eşyaların mevcut durumları
-                </small>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">Duruma Göre Dağılım</h5>
+                    <small class="text-muted">
+                        Kayıp eşyaların mevcut durumları
+                    </small>
+                </div>
+                <a asp-controller="KayipEsya"
+                   asp-action="Index"
+                   class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-list-ul me-1"></i>Tümünü Gör
+                </a>
             </div>
 
             <div class="card-body">
@@ -431,72 +438,31 @@
                 }
                 else
                 {
-                    foreach (var durum in Model.DurumBazliDagilim)
-                    {
-                        var yuzde = Model.ToplamKayipEsya > 0
-                            ? Math.Round(durum.Adet * 100.0 / Model.ToplamKayipEsya, 1)
-                            : 0;
-
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <strong class="small">@durum.Durum</strong>
-                                <span class="small text-muted">@durum.Adet adet · %@yuzde</span>
-                            </div>
-                            <div class="progress" style="height: 10px; border-radius: 8px;">
-                                <div class="progress-bar @durum.Renk"
-                                     style="width:@yuzde%"></div>
-                            </div>
-                        </div>
-                    }
-                }
-
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-6">
-        <div class="card h-100">
-
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-1">Kategori Dağılımı</h5>
-                    <small class="text-muted">
-                        En çok kaydedilen ilk 8 kategori
-                    </small>
-                </div>
-                <a asp-controller="Kategori"
-                   asp-action="Index"
-                   class="btn btn-sm btn-outline-primary">
-                    Tümü
-                </a>
-            </div>
-
-            <div class="card-body">
-
-                @if (!Model.KategoriBazliDagilim.Any())
-                {
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="bi bi-tags-fill"></i>
-                        </div>
-                        <h5>Henüz veri yok</h5>
-                        <p>Sisteme kayıt eklendiğinde kategori dağılımı burada görünecek.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="row g-3">
-                        @foreach (var ktg in Model.KategoriBazliDagilim)
+                    <div class="row g-4">
+                        @foreach (var durum in Model.DurumBazliDagilim)
                         {
-                            <div class="col-6 col-sm-4">
-                                <div class="p-3 border rounded-3 bg-light">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="badge bg-primary">@ktg.Adet</span>
-                                        <small class="text-muted">%@ktg.Yuzde</small>
+                            var yuzde = Model.ToplamKayipEsya > 0
+                                ? Math.Round(durum.Adet * 100.0 / Model.ToplamKayipEsya, 1)
+                                : 0;
+
+                            <div class="col-md-6 col-xl-4">
+                                <div class="p-4 rounded-4 border-0 shadow-sm h-100"
+                                     style="background:linear-gradient(135deg,@(string.IsNullOrWhiteSpace(durum.GradientSol) ? "#ffffff" : durum.GradientSol) 0%,@(string.IsNullOrWhiteSpace(durum.GradientSag) ? "#f8fafc" : durum.GradientSag) 100%);">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0 fw-semibold text-dark">@durum.Durum</h6>
+                                        <span class="badge text-bg-white text-dark border px-3 py-1 rounded-pill">
+                                            @durum.Adet adet
+                                        </span>
                                     </div>
-                                    <div class="small fw-semibold text-truncate"
-                                         title="@ktg.KategoriAdi">
-                                        @ktg.KategoriAdi
+                                    <div class="d-flex align-items-end justify-content-between gap-2 mb-3">
+                                        <div class="display-5 fw-bold" style="font-size:2.2rem;">
+                                            %@yuzde
+                                        </div>
+                                        <small class="text-muted mb-1">Toplam @Model.ToplamKayipEsya</small>
+                                    </div>
+                                    <div class="progress" style="height: 12px; border-radius: 10px;background:rgba(15,23,42,0.06);">
+                                        <div class="progress-bar @durum.Renk rounded-pill"
+                                             style="width:@yuzde%"></div>
                                     </div>
                                 </div>
                             </div>

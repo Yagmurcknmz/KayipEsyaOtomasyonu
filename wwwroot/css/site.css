@@ -394,7 +394,15 @@ a {
     border-radius: 18px;
     background: var(--surface);
     box-shadow: var(--shadow);
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, box-shadow;
 }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.075);
+    }
 
 .card-header {
     padding: 18px 22px;
@@ -414,7 +422,31 @@ a {
     padding: 8px 16px;
     border-radius: 11px;
     font-weight: 600;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.2s ease,
+                background 0.3s ease,
+                opacity 0.2s ease;
+    transform: translateY(0);
+    will-change: transform, box-shadow;
+    border: none !important;
 }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 26px rgba(11, 92, 255, 0.18);
+    }
+
+    .btn:active {
+        transform: translateY(0) scale(0.985);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
 
 .btn-sm {
     min-height: 34px;
@@ -424,48 +456,85 @@ a {
 }
 
 .btn-primary {
-    border-color: var(--primary);
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--gradient-primary-start) 0%, var(--gradient-primary-end) 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(11, 92, 255, 0.25);
 }
 
     .btn-primary:hover,
     .btn-primary:focus {
-        border-color: var(--primary-dark);
-        background: var(--primary-dark);
+        background: linear-gradient(135deg, var(--gradient-primary-end) 0%, var(--primary-dark) 100%);
+        color: #ffffff;
     }
 
 .btn-success {
-    border-color: var(--accent);
-    background: var(--accent);
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.22);
 }
 
     .btn-success:hover,
     .btn-success:focus {
-        border-color: #21867b;
-        background: #21867b;
-    }
-
-.btn-outline-primary {
-    border-color: var(--primary);
-    color: var(--primary);
-}
-
-    .btn-outline-primary:hover {
-        border-color: var(--primary);
-        background: var(--primary);
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
         color: #ffffff;
     }
 
-.btn-warning {
-    border-color: #f3b64b;
-    background: #f3b64b;
-    color: #4b3500;
+.btn-outline-primary {
+    border: 1px solid var(--primary) !important;
+    color: var(--primary);
+    background: transparent;
+    box-shadow: none;
 }
 
-.btn-danger {
-    border-color: var(--danger);
-    background: var(--danger);
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, var(--gradient-primary-start) 0%, var(--gradient-primary-end) 100%);
+        color: #ffffff;
+        box-shadow: 0 8px 20px rgba(11, 92, 255, 0.18);
+    }
+
+.btn-warning {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #422006;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.22);
 }
+
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: #422006;
+    }
+
+.btn-danger {
+    background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.22);
+}
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        color: #ffffff;
+    }
+
+.btn-secondary {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(100, 116, 139, 0.18);
+}
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: #ffffff;
+    }
+
+.btn-info {
+    background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(8, 145, 178, 0.2);
+}
+
+    .btn-info:hover {
+        background: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%);
+        color: #ffffff;
+    }
 
 /* Formlar */
 
@@ -475,7 +544,14 @@ a {
     padding: 10px 13px;
     border: 1px solid #d7dde5;
     border-radius: 11px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    background: #ffffff;
 }
+
+    .form-control:hover,
+    .form-select:hover {
+        border-color: #b9c3d1;
+    }
 
 textarea.form-control {
     min-height: auto;
@@ -483,8 +559,10 @@ textarea.form-control {
 
 .form-control:focus,
 .form-select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 0.2rem rgba(42, 157, 143, 0.15);
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(11, 92, 255, 0.12) !important;
+    outline: none !important;
+    background: #fcfdff;
 }
 
 .form-label {
@@ -513,10 +591,18 @@ textarea.form-control {
     font-size: 12px;
 }
 
+input[type="file"].form-control {
+    min-height: 45px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background: #ffffff;
+}
+
 /* Tablolar */
 
 .table-responsive {
     border-radius: 12px;
+    overflow: hidden;
 }
 
 .table {
@@ -539,9 +625,13 @@ textarea.form-control {
         vertical-align: middle;
     }
 
-.table-hover tbody tr:hover {
-    background: #f8fbfc;
+.table-hover tbody tr {
+    transition: background 0.2s ease, transform 0.18s ease;
 }
+
+    .table-hover tbody tr:hover {
+        background: #f3f7ff;
+    }
 
 /* Rozet ve Mesajlar */
 
@@ -569,6 +659,187 @@ textarea.form-control {
 .alert-info {
     background: #e5f4ff;
     color: #155b80;
+}
+
+/* Toast Notification (Sağ Alt Köşe) */
+.toast-container {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 12px;
+    max-width: calc(100vw - 40px);
+    width: 380px;
+    pointer-events: none;
+}
+
+.toast-notif {
+    pointer-events: auto;
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+    color: #ffffff;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    overflow: hidden;
+    position: relative;
+    animation: toastIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+    background: #0f172a;
+    border: none;
+}
+
+    .toast-notif::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 5px;
+        height: 100%;
+        background: currentColor;
+        opacity: 0.85;
+    }
+
+    .toast-notif.toast-out {
+        animation: toastOut 0.35s cubic-bezier(0.55, 0, 0.68, 0.53) both;
+    }
+
+    .toast-notif .toast-icon {
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.14);
+        display: grid;
+        place-items: center;
+        font-size: 1.05rem;
+    }
+
+    .toast-notif .toast-body {
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .toast-notif .toast-title {
+        font-weight: 700;
+        font-size: 14.5px;
+        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+    }
+
+    .toast-notif .toast-msg {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        opacity: 0.92;
+        word-wrap: break-word;
+    }
+
+    .toast-notif .toast-close {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.85);
+        border: none;
+        padding: 2px;
+        border-radius: 6px;
+        line-height: 1;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background 0.2s ease;
+        flex-shrink: 0;
+    }
+
+        .toast-notif .toast-close:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+
+.toast-success {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, var(--gradient-primary-start) 0%, var(--gradient-primary-end) 100%);
+}
+
+.toast-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #422006;
+}
+
+    .toast-warning .toast-close,
+    .toast-warning .toast-icon {
+        color: #422006;
+    }
+
+    .toast-warning .toast-icon {
+        background: rgba(66, 32, 6, 0.14);
+    }
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(32px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes toastOut {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(32px) scale(0.97);
+    }
+}
+
+/* Sayfa Açılış Animasyonu */
+.page-fade {
+    animation: pageFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pageFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Select Tag Helper Dropdown ok hover yumusat */
+.form-select {
+    cursor: pointer;
+}
+
+/* Disabled input stili */
+.form-control:disabled,
+.form-control[readonly] {
+    background: #f8fafc;
+    cursor: not-allowed;
+    color: #64748b;
+}
+
+/* Submitte dönen loading spinner'ı buton içinde hizala */
+.spinner-border-sm {
+    --bs-spinner-width: 1rem;
+    --bs-spinner-height: 1rem;
 }
 
 /* Dashboard */

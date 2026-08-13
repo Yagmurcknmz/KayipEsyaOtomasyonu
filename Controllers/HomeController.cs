@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System.Diagnostics;
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
 using KayipEsyaOtomasyonu.ViewModels;
@@ -113,13 +113,13 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             var durumlar = new[]
             {
-                new { Ad = "Yeni Kayıt", Renk = "bg-primary" },
-                new { Ad = "Depoda", Renk = "bg-warning" },
-                new { Ad = "Eşleşme Bulundu", Renk = "bg-info" },
-                new { Ad = "Vatandaşa Haber Verildi", Renk = "bg-secondary" },
-                new { Ad = "Teslim Bekliyor", Renk = "bg-orange" },
-                new { Ad = "Teslim Edildi", Renk = "bg-success" },
-                new { Ad = "Arşivlendi", Renk = "bg-muted" }
+                new { Ad = "Yeni Kayıt", Renk = "bg-primary", Sol = "#dbeafe", Sag = "#eff6ff" },
+                new { Ad = "Depoda", Renk = "bg-warning text-dark", Sol = "#fef3c7", Sag = "#fffbeb" },
+                new { Ad = "Eşleşme Bulundu", Renk = "bg-info text-dark", Sol = "#cffafe", Sag = "#ecfeff" },
+                new { Ad = "Vatandaşa Haber Verildi", Renk = "bg-secondary", Sol = "#e2e8f0", Sag = "#f1f5f9" },
+                new { Ad = "Teslim Bekliyor", Renk = "bg-orange", Sol = "#ffedd5", Sag = "#fff7ed" },
+                new { Ad = "Teslim Edildi", Renk = "bg-success", Sol = "#dcfce7", Sag = "#f0fdf4" },
+                new { Ad = "Arşivlendi", Renk = "bg-dark", Sol = "#e5e7eb", Sag = "#f9fafb" }
             };
 
             foreach (var durum in durumlar)
@@ -133,7 +133,9 @@ namespace KayipEsyaOtomasyonu.Controllers
                     {
                         Durum = durum.Ad,
                         Adet = adet,
-                        Renk = durum.Renk
+                        Renk = durum.Renk,
+                        GradientSol = durum.Sol,
+                        GradientSag = durum.Sag
                     });
                 }
             }

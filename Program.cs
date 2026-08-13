@@ -39,8 +39,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 
-    options.SignIn.RequireConfirmedAccount = true;
-    options.SignIn.RequireConfirmedEmail = true;
+    // KAYIT SIRASINDA e-posta dogrulamasini KAPAT.
+    // Sadece: E-posta DEGISTIRME + Sifre SIFIRLAMA islemlerinde dogrulama olsun (ChangeEmail/PasswordReset token saglayicilari halen AKTIF).
+    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedEmail = false;
 
     options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
     options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
