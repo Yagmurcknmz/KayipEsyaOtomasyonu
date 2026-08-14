@@ -4,6 +4,13 @@
     ViewData["Title"] = "Eşleşme Yönetimi";
 }
 
+<style>
+    @@keyframes pulsebekleyen{
+        0%,100%{ box-shadow:0 10px 15px rgba(245,158,11,0.35); }
+        50%{ box-shadow:0 16px 30px rgba(245,158,11,0.6), 0 0 0 10px rgba(245,158,11,0.18); }
+    }
+</style>
+
 @{
     string DurumRengi(EslesmeDurumu d) => d switch
     {
@@ -27,6 +34,15 @@
         EslesmeDurumu.Reddedildi  => "Reddedildi",
         EslesmeDurumu.TeslimEdildi=> "Teslim Edildi",
         _                         => d.ToString()
+    };
+    // Skor badge helper (renk+ikon):
+    (string Sinif, string Ikon, string Etiket) SkorBilgi(int s) => s switch
+    {
+        >= 90 => ("skor-mukemmel",   "bi bi-stars",        "Mükemmel"),
+        >= 75 => ("skor-yuksek",     "bi bi-check-circle-fill", "Yüksek"),
+        >= 55 => ("skor-orta",       "bi bi-hand-thumbs-up",   "Orta"),
+        >= 35 => ("skor-kismi",      "bi bi-exclamation-circle-fill", "Kısmi"),
+        _     => ("skor-dusuk",      "bi bi-x-circle-fill",   "Düşük"),
     };
 }
 
@@ -83,15 +99,135 @@
             </div>
 
             <div class="card-body bg-light bg-opacity-25 p-4">
-                <!-- Filtreler -->
+
+                <!-- SEKMELİ DURUM FİLTRESİ (Her birinde SAYAC + AKTİF renkli) -->
+                @{
+                    var mevcutDurum = (EslesmeDurumu?)ViewBag.Durum;
+                    int sToplam = ViewBag.SayacToplam ?? 0;
+                    int sBekleyen = ViewBag.SayacBekleyen ?? 0;
+                    int sOnaylanan = ViewBag.SayacOnaylanan ?? 0;
+                    int sReddedilen = ViewBag.SayacReddedilen ?? 0;
+                    int sTeslim = ViewBag.SayacTeslim ?? 0;
+                }
+                <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden">
+                    <div class="card-body p-3 p-sm-4 d-flex flex-wrap gap-2 justify-content-between align-items-stretch"
+                         style="background:linear-gradient(135deg,#fafafa 0%,#ffffff 100%);">
+
+                        <!-- 1. TÜMÜ -->
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           asp-route-ara="@ViewBag.Ara"
+                           asp-route-kategoriId="@ViewBag.KategoriId"
+                           class="btn d-flex flex-column flex-grow-1 align-items-center justify-content-center gap-1 rounded-3 fw-semibold py-3 px-2 px-sm-4
+                                  @(mevcutDurum == null ? "text-white shadow-lg" : "bg-white border text-dark")"
+                           style="@(mevcutDurum == null ? "background:linear-gradient(135deg,#0f172a 0%,#334155 100%);" : "min-width:150px;")">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@(mevcutDurum == null ? "bi bi-grid-fill" : "bi bi-grid text-dark opacity-70")"></i>
+                                <span class="text-nowrap">TÜM EŞLEŞMELER</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 small">
+                                <span class="badge rounded-pill @(mevcutDurum == null ? "bg-white text-dark" : "bg-secondary-subtle text-dark-emphasis") px-3 py-1 fw-bold">
+                                    @sToplam
+                                </span>
+                                <span class="opacity-75 small">kayıt</span>
+                            </div>
+                        </a>
+
+                        <!-- 2. BEKLEYEN -->
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           asp-route-ara="@ViewBag.Ara"
+                           asp-route-kategoriId="@ViewBag.KategoriId"
+                           asp-route-durum="@nameof(EslesmeDurumu.Beklemede)"
+                           class="btn d-flex flex-column flex-grow-1 align-items-center justify-content-center gap-1 rounded-3 fw-semibold py-3 px-2 px-sm-4
+                                  @(mevcutDurum == EslesmeDurumu.Beklemede ? "text-white shadow-lg" : "bg-white border text-dark")"
+                           style="@(mevcutDurum == EslesmeDurumu.Beklemede ? "background:linear-gradient(135deg,#f59e0b 0%,#ea580c 100%);animation:pulsebekleyen 2.5s ease infinite;" : "min-width:150px;")">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@(mevcutDurum == EslesmeDurumu.Beklemede ? "bi bi-hourglass-split" : "bi bi-hourglass-split text-warning")"></i>
+                                <span class="text-nowrap">BEKLEYEN</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 small">
+                                <span class="badge rounded-pill @(mevcutDurum == EslesmeDurumu.Beklemede ? "bg-white text-dark" : "bg-warning-subtle text-dark-emphasis") px-3 py-1 fw-bold">
+                                    @sBekleyen
+                                </span>
+                                <span class="opacity-75 small">onay bekliyor</span>
+                            </div>
+                        </a>
+
+                        <!-- 3. ONAYLANAN -->
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           asp-route-ara="@ViewBag.Ara"
+                           asp-route-kategoriId="@ViewBag.KategoriId"
+                           asp-route-durum="@nameof(EslesmeDurumu.Onaylandi)"
+                           class="btn d-flex flex-column flex-grow-1 align-items-center justify-content-center gap-1 rounded-3 fw-semibold py-3 px-2 px-sm-4
+                                  @(mevcutDurum == EslesmeDurumu.Onaylandi ? "text-white shadow-lg" : "bg-white border text-dark")"
+                           style="@(mevcutDurum == EslesmeDurumu.Onaylandi ? "background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);" : "min-width:150px;")">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@(mevcutDurum == EslesmeDurumu.Onaylandi ? "bi bi-check2-circle" : "bi bi-check2-circle text-success")"></i>
+                                <span class="text-nowrap">ONAYLANAN</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 small">
+                                <span class="badge rounded-pill @(mevcutDurum == EslesmeDurumu.Onaylandi ? "bg-white text-dark" : "bg-success-subtle text-dark-emphasis") px-3 py-1 fw-bold">
+                                    @sOnaylanan
+                                </span>
+                                <span class="opacity-75 small">teslim edilecek</span>
+                            </div>
+                        </a>
+
+                        <!-- 4. REDDEDİLEN -->
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           asp-route-ara="@ViewBag.Ara"
+                           asp-route-kategoriId="@ViewBag.KategoriId"
+                           asp-route-durum="@nameof(EslesmeDurumu.Reddedildi)"
+                           class="btn d-flex flex-column flex-grow-1 align-items-center justify-content-center gap-1 rounded-3 fw-semibold py-3 px-2 px-sm-4
+                                  @(mevcutDurum == EslesmeDurumu.Reddedildi ? "text-white shadow-lg" : "bg-white border text-dark")"
+                           style="@(mevcutDurum == EslesmeDurumu.Reddedildi ? "background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);" : "min-width:150px;")">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@(mevcutDurum == EslesmeDurumu.Reddedildi ? "bi bi-x-circle-fill" : "bi bi-x-circle-fill text-danger")"></i>
+                                <span class="text-nowrap">REDDEDİLEN</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 small">
+                                <span class="badge rounded-pill @(mevcutDurum == EslesmeDurumu.Reddedildi ? "bg-white text-dark" : "bg-danger-subtle text-dark-emphasis") px-3 py-1 fw-bold">
+                                    @sReddedilen
+                                </span>
+                                <span class="opacity-75 small">uyumsuz</span>
+                            </div>
+                        </a>
+
+                        <!-- 5. TESLİM EDİLEN (TAMAMLANAN) -->
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           asp-route-ara="@ViewBag.Ara"
+                           asp-route-kategoriId="@ViewBag.KategoriId"
+                           asp-route-durum="@nameof(EslesmeDurumu.TeslimEdildi)"
+                           class="btn d-flex flex-column flex-grow-1 align-items-center justify-content-center gap-1 rounded-3 fw-semibold py-3 px-2 px-sm-4
+                                  @(mevcutDurum == EslesmeDurumu.TeslimEdildi ? "text-white shadow-lg" : "bg-white border text-dark")"
+                           style="@(mevcutDurum == EslesmeDurumu.TeslimEdildi ? "background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#6366f1 100%);" : "min-width:150px;")">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="@(mevcutDurum == EslesmeDurumu.TeslimEdildi ? "bi bi-check2-all" : "bi bi-check2-all text-primary")"></i>
+                                <span class="text-nowrap">TAMAMLANAN</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 small">
+                                <span class="badge rounded-pill @(mevcutDurum == EslesmeDurumu.TeslimEdildi ? "bg-white text-dark" : "bg-primary-subtle text-dark-emphasis") px-3 py-1 fw-bold">
+                                    @sTeslim
+                                </span>
+                                <span class="opacity-75 small">sahibe teslim</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Filtreler (ARTIK SADECE: Arama + Kategori, Durum SEKMELERDEN yönetiliyor) -->
                 <div class="card border rounded-3 shadow-sm mb-4">
                     <div class="card-body">
                         <form asp-controller="Eslesme" asp-action="Index" method="get">
+                            @* Durum Query string: Sekmelerden zaten geliyor, ekle ki submit olunca kaybolmasın *@
+                            if (mevcutDurum != null)
+                            {
+                                <input type="hidden" name="durum" value="@mevcutDurum.ToString()" />
+                            }
                             <div class="row g-3 align-items-end">
 
-                                <div class="col-md-4">
+                                <div class="col-md-5">
                                     <label class="form-label small text-uppercase text-muted fw-semibold mb-1">
-                                        Arama
+                                        🔎 Kelime Arama
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-white border-end-0">
@@ -100,16 +236,16 @@
                                         <input name="ara"
                                                value="@ViewBag.Ara"
                                                class="form-control border-start-0 ps-0"
-                                               placeholder="Eşya adı, marka, vatandaş ara..." />
+                                               placeholder="Eşya adı, Marka, Model, Vatandaş adı soyadı ara..." />
                                     </div>
                                 </div>
 
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label small text-uppercase text-muted fw-semibold mb-1">
-                                        Kategori
+                                        📂 Kategori
                                     </label>
                                     <select name="kategoriId" class="form-select">
-                                        <option value="">Tümü</option>
+                                        <option value="">Tüm Kategoriler</option>
                                         @if (ViewBag.Kategoriler != null)
                                         {
                                             @foreach (var ktg in (List<Kategori>)ViewBag.Kategoriler)
@@ -127,36 +263,14 @@
                                     </select>
                                 </div>
 
-                                <div class="col-md-3">
-                                    <label class="form-label small text-uppercase text-muted fw-semibold mb-1">
-                                        Durum
-                                    </label>
-                                    <select name="durum" class="form-select">
-                                        <option value="">Tümü</option>
-                                        @if (ViewBag.TumDurumlar != null)
-                                        {
-                                            @foreach (var d in (dynamic)ViewBag.TumDurumlar)
-                                            {
-                                                if (ViewBag.Durum != null && ViewBag.Durum?.ToString() == d.Deger.ToString())
-                                                {
-                                                    <option value="@d.Deger" selected>@DurumYazdir((EslesmeDurumu)d.Deger)</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@d.Deger">@DurumYazdir((EslesmeDurumu)d.Deger)</option>
-                                                }
-                                            }
-                                        }
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2 d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary w-100 rounded-3">
+                                <div class="col-md-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-semibold shadow-sm">
                                         <i class="bi bi-filter me-1"></i>
                                         Filtrele
                                     </button>
-                                    <a asp-controller="Eslesme" asp-action="Index" class="btn btn-outline-secondary rounded-3">
-                                        <i class="bi bi-x-lg"></i>
+                                    <a asp-controller="Eslesme" asp-action="Index" class="btn btn-outline-secondary rounded-3 shadow-sm">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                        <span class="d-none d-sm-inline ms-1">Sıfırla</span>
                                     </a>
                                 </div>
 
@@ -243,10 +357,13 @@
                                                         </small>
                                                     </div>
                                                 </td>
-                                                <td style="min-width:180px;">
-                                                    <div class="d-flex align-items-center gap-2">
+                                                <td style="min-width:230px;">
+                                                    @{
+                                                        var sb = SkorBilgi(e.Skor);
+                                                    }
+                                                    <div class="d-flex align-items-center gap-3 eslesme-progress-kapsul">
                                                         <div class="flex-grow-1">
-                                                            <div class="progress" style="height:12px;">
+                                                            <div class="progress" style="height:10px;">
                                                                 <div class="progress-bar @DurumRengiProgress(e.Skor)"
                                                                      role="progressbar"
                                                                      style="width:@e.Skor%"
@@ -256,9 +373,10 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <strong class="@(e.Skor >= 80 ? "text-success" : e.Skor >= 55 ? "text-info" : e.Skor >= 35 ? "text-warning" : "text-danger")">
-                                                            %@e.Skor
-                                                        </strong>
+                                                        <span class="skor-badge @sb.Sinif" title="@sb.Etiket benzerlik">
+                                                            <i class="@sb.Ikon"></i>
+                                                            <span>%@e.Skor</span>
+                                                        </span>
                                                     </div>
                                                     @if (!string.IsNullOrWhiteSpace(e.EslesmeDetay))
                                                     {

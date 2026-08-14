@@ -67,41 +67,92 @@
 
             <div class="card-body p-4 bg-light bg-opacity-25">
 
-                <!-- Eşleşme Skoru -->
+                <!-- Eşleşme Skoru (2 kolon) -->
                 <div class="card border rounded-3 shadow-sm mb-4">
                     <div class="card-body">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                            <div>
-                                <h6 class="mb-1 fw-semibold small text-uppercase text-muted">Eşleşme Skoru</h6>
-                                <div class="h2 mb-0 fw-bold @SkorRengi(Model.Skor)">
-                                    %@Model.Skor
-                                    <small class="h6 text-muted fw-normal ms-2">(@(
-                                        Model.Skor >= 80 ? "Mükemmel Eşleşme" :
-                                        Model.Skor >= 55 ? "İyi Eşleşme" :
-                                        Model.Skor >= 35 ? "Kısmi Eşleşme" : "Zayıf Eşleşme"
-                                    ))</small>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 mx-4" style="max-width:600px;">
-                                <div class="progress" style="height:20px;border-radius:999px;">
-                                    <div class="progress-bar @SkorBar(Model.Skor)"
-                                         role="progressbar"
-                                         style="width:@Model.Skor%;border-radius:999px;"
-                                         aria-valuenow="@Model.Skor"
-                                         aria-valuemin="0"
-                                         aria-valuemax="100">
+                        <div class="row g-4 align-items-center">
+                            <!-- SOL KOLON: Büyük Skor Çemberi -->
+                            <div class="col-md-4 col-lg-3 d-flex justify-content-center">
+                                @{
+                                    // Skora gore conic-gradient renk belirle:
+                                    string cemberRenk = Model.Skor switch
+                                    {
+                                        >= 90 => "#1d4ed8", // Mavi (Mükemmel)
+                                        >= 75 => "#15803d", // Yeşil (Yüksek)
+                                        >= 55 => "#a16207", // Sari (Orta)
+                                        >= 35 => "#c2410c", // Turuncu (Kısmi)
+                                        _     => "#b91c1c"  // Kirmizi (Düşük)
+                                    };
+                                    int skorDerece = (int)Math.Round(360.0 * Model.Skor / 100.0);
+                                    var sbSkor = (Sinif: "", Ikon: "", Etiket: "");
+                                    if (Model.Skor >= 90)       { sbSkor = ("skor-mukemmel", "bi bi-stars", "Mükemmel"); }
+                                    else if (Model.Skor >= 75)  { sbSkor = ("skor-yuksek", "bi bi-check-circle-fill", "Yüksek"); }
+                                    else if (Model.Skor >= 55)  { sbSkor = ("skor-orta", "bi bi-hand-thumbs-up", "Orta"); }
+                                    else if (Model.Skor >= 35)  { sbSkor = ("skor-kismi", "bi bi-exclamation-circle-fill", "Kısmi"); }
+                                    else                        { sbSkor = ("skor-dusuk", "bi bi-x-circle-fill", "Düşük"); }
+                                }
+                                <div class="skor-kart w-100">
+                                    <div class="skor-daire" style="background: conic-gradient(from 0deg,
+                                            @cemberRenk 0deg @(skorDerece)deg,
+                                            #e5e7eb @(skorDerece)deg 360deg);">
+                                        <div>
+                                            <span class="yuzde" style="color:@cemberRenk;">%@Model.Skor</span>
+                                            <span class="aciklama">BENZERLİK</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-1">
+                                        <span class="skor-badge @sbSkor.Sinif">
+                                            <i class="@sbSkor.Ikon"></i>
+                                            <span>@sbSkor.Etiket</span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(Model.EslesmeDetay))
-                        {
-                            <div class="mt-3 small bg-light p-2 rounded-2 border">
-                                <i class="bi bi-lightbulb me-1 text-warning"></i>
-                                <strong>Eşleşme Detayı:</strong>
-                                <span class="text-muted">@Model.EslesmeDetay</span>
+
+                            <!-- SAG KOLON: Bilgi + Progress + Detay -->
+                            <div class="col-md-8 col-lg-9">
+                                <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+                                    <div>
+                                        <h6 class="mb-1 fw-semibold small text-uppercase text-muted">Bulanık (Fuzzy) Eşleşme Skoru</h6>
+                                        <div class="h2 mb-0 fw-bold @SkorRengi(Model.Skor)">
+                                            %@Model.Skor
+                                            <small class="h6 text-muted fw-normal ms-2">(@(
+                                                Model.Skor >= 80 ? "Mükemmel Eşleşme ✨" :
+                                                Model.Skor >= 55 ? "İyi Eşleşme 👍" :
+                                                Model.Skor >= 35 ? "Kısmi Eşleşme ⚠️" : "Zayıf Eşleşme ❌"
+                                            ))</small>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="bi bi-robot me-1"></i>
+                                            Bu sonuç FuzzySharp ile metin benzerliği algoritması (Token Set Ratio) kullanılarak
+                                            Ad (%40), Marka (%20), Model (%15), Renk (%10), Özellik (%5) ve Kategori (+35 bonus) ağırlıkları ile hesaplanmıştır.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <div class="progress" style="height:20px;border-radius:999px;">
+                                        <div class="progress-bar @SkorBar(Model.Skor)"
+                                             role="progressbar"
+                                             style="width:@Model.Skor%;border-radius:999px;"
+                                             aria-valuenow="@Model.Skor"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            <span class="visually-hidden">%@Model.Skor</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.EslesmeDetay))
+                                {
+                                    <div class="mt-3 small bg-light p-2 rounded-2 border">
+                                        <i class="bi bi-lightbulb me-1 text-warning"></i>
+                                        <strong>Eşleşme Detayı:</strong>
+                                        <span class="text-muted">@Model.EslesmeDetay</span>
+                                    </div>
+                                }
                             </div>
-                        }
+                        </div>
                     </div>
                 </div>
 
@@ -264,57 +315,411 @@
                     </div>
                 </div>
 
-                <!-- Footer İşlemler -->
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top pt-4">
+                <!-- SÜREÇ DURUM BİLGİSİ + BÜYÜK EYLEM BUTONLARI -->
+                @{
+                    // --- AŞAMA 1: BEKLEMEDE ---
+                    if (Model.Durum == EslesmeDurumu.Beklemede)
+                    {
+                        <div class="card border-3 rounded-4 shadow-lg overflow-hidden mb-4"
+                             style="border-style:solid;border-color:#f59e0b;background:linear-gradient(135deg,#fffbeb 0%,#ffffff 55%,#fef3c7 100%);">
+                            <div class="card-header bg-transparent border-0 py-4 px-4 px-sm-5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-3 text-white shadow-lg"
+                                         style="width:58px;height:58px;background:linear-gradient(135deg,#f59e0b,#ea580c);
+                                                animation:pulsebekleyen 2.5s ease infinite;">
+                                        <i class="bi bi-hourglass-split fs-3"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h5 class="mb-0 fw-bold text-orange-emphasis">① Aşama: Onay / Red Bekleniyor</h5>
+                                            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning fw-semibold px-3 py-2">
+                                                <i class="bi bi-clock-history me-1"></i>
+                                                Beklemede
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-info-circle text-warning me-1"></i>
+                                            Bu eşleşme önerisini <strong>Onayla</strong> veya <strong>Reddet</strong> seçeneklerinden biriyle sonuçlandırın.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body bg-white bg-opacity-70 p-4 p-sm-5">
+                                <div class="row g-4 align-items-stretch">
+                                    <div class="col-md-6 col-12">
+                                        <form asp-controller="Eslesme" asp-action="Onayla" method="post"
+                                              onsubmit="return confirm('⚠️ Eşleşme ONAYLANACAK: Başvuru ve Eşya \"Eşleşme Bulundu\" olarak işaretlenecek, vatandaşa bildirim gönderilecek.\n\nDevam etmek istiyor musunuz?');">
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <div class="h-100 d-flex flex-column gap-3 p-4 rounded-4 border-3 border-success bg-success bg-opacity-5"
+                                                 style="border-style:solid;">
+                                                <h6 class="fw-bold text-success-emphasis mb-0 d-flex align-items-center gap-2">
+                                                    <i class="bi bi-check2-circle fs-3"></i>
+                                                    Onayla & Eşleştir
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Onaylarsanız: Başvuru "Eşleşme Bulundu" → Eşya "Eşleşme Bulundu" → Vatandaşa bildirim gider.
+                                                </small>
+                                                <div>
+                                                    <label class="form-label small fw-semibold text-muted mb-1">Not (İsteğe bağlı)</label>
+                                                    <input name="adminNotu"
+                                                           maxlength="200"
+                                                           class="form-control rounded-3 border border-success-subtle"
+                                                           placeholder="Neden onayladınız? (Örn: Özellikler uyuşuyor)" />
+                                                </div>
+                                                <button type="submit"
+                                                        class="btn w-100 rounded-3 py-3 fw-bold text-white fs-5 shadow-lg mt-auto"
+                                                        style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);">
+                                                    <i class="bi bi-check2-all fs-3 me-2"></i>
+                                                    ✅ BU EŞLEŞMEYİ ONAYLA
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6 col-12">
+                                        <form asp-controller="Eslesme" asp-action="Reddet" method="post"
+                                              onsubmit="return confirm('⚠️ Eşleşme REDDEDİLECEK: (Eğer onaylanmışsa Başvuru ve Eşya \"Beklemede\" durumuna geri dönecektir.)\n\nDevam etmek istiyor musunuz?');">
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <div class="h-100 d-flex flex-column gap-3 p-4 rounded-4 border-3 border-danger bg-danger bg-opacity-5"
+                                                 style="border-style:solid;">
+                                                <h6 class="fw-bold text-danger-emphasis mb-0 d-flex align-items-center gap-2">
+                                                    <i class="bi bi-x-octagon fs-3"></i>
+                                                    Reddet / Uygunsuz
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Reddederseniz: Eşleşme "Reddedildi" olur, yeni öneriler için tarama çalışabilir.
+                                                </small>
+                                                <div>
+                                                    <label class="form-label small fw-semibold text-muted mb-1">Neden reddediliyor? <span class="text-danger">*</span></label>
+                                                    <textarea name="adminNotu" required
+                                                              maxlength="300" rows="2"
+                                                              class="form-control rounded-3 border border-danger-subtle"
+                                                              placeholder="Örn: Markalar farklı, renk uyuşmuyor, serin no kontrolü başarısız."></textarea>
+                                                </div>
+                                                <button type="submit"
+                                                        class="btn w-100 rounded-3 py-3 fw-bold text-white fs-5 shadow-lg mt-auto"
+                                                        style="background:linear-gradient(135deg,#dc2626 0%,#991b1b 100%);">
+                                                    <i class="bi bi-x-circle fs-3 me-2"></i>
+                                                    ❌ BU EŞLEŞMEYİ REDDET
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    // --- AŞAMA 2: ONAYLANDI (Sırada Teslim) ---
+                    else if (Model.Durum == EslesmeDurumu.Onaylandi)
+                    {
+                        <div class="card border-3 rounded-4 shadow-lg overflow-hidden mb-4"
+                             style="border-style:solid;border-color:#16a34a;background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 55%,#bbf7d0 100%);">
+                            <div class="card-header bg-transparent border-0 py-4 px-4 px-sm-5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-3 text-white shadow-lg"
+                                         style="width:58px;height:58px;background:linear-gradient(135deg,#16a34a,#15803d);">
+                                        <i class="bi bi-check2-circle fs-3"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <h5 class="mb-0 fw-bold text-success-emphasis">② Aşama: Onaylandı · Sırada Sahibe Teslim Var</h5>
+                                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success fw-semibold px-3 py-2">
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                                Onaylandı
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-info-circle text-success me-1"></i>
+                                            Vatandaşa bildirim gönderildi. Şimdi aşağıdan <strong>Teslim Et</strong> işlemini tamamlayın.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body bg-white bg-opacity-70 p-4 p-sm-5">
+                                <div class="row g-4 align-items-stretch">
+                                    <div class="col-lg-6 mb-3 mb-lg-0">
+                                        <div class="h-100 p-4 rounded-4 border border-secondary-subtle bg-white">
+                                            <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-card-checklist me-2"></i>Teslim Öncesi Bilgiler</h6>
+                                            <div class="d-flex flex-column gap-2 small">
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-muted">Teslim Alacak Kişi:</span>
+                                                    <span class="fw-bold text-dark">@(Model.KayipBildirimi?.Vatandas?.Ad + " " + Model.KayipBildirimi?.Vatandas?.Soyad)</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-muted">Telefon:</span>
+                                                    <span class="fw-semibold text-dark">@(Model.KayipBildirimi?.Vatandas?.PhoneNumber ?? "-")</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-muted">Eşya:</span>
+                                                    <span class="fw-bold text-dark">@(Model.KayipEsya?.EsyaAdi ?? "-")</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between border-bottom py-2">
+                                                    <span class="fw-semibold text-muted">Raf Numarası:</span>
+                                                    <span class="fw-semibold text-dark">@(Model.KayipEsya?.RafNo ?? "-")</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between py-2">
+                                                    <span class="fw-semibold text-muted">Ön Bilgilendirme:</span>
+                                                    <span class="text-muted"><small>Kişinin kimliğini mutlaka kontrol edin!</small></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <form asp-controller="Eslesme" asp-action="TeslimEt" method="post"
+                                              onsubmit="return confirm('⚠️ Son Adım:\nBu eşya \"SAHİBE TESLİM EDİLDİ\" olarak işaretlenecek.\nBaşvuru: Tamamlandı (Kilitli)\nEşya: Sahibe Teslim Edildi (Kilitli)\n\n⚠️ BU İŞLEM GERİ ALINAMAZ (Reddederek geri almak zorunda kalırsınız). Onaylıyor musunuz?');">
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <div class="h-100 d-flex flex-column gap-3 p-4 rounded-4 border-3"
+                                                 style="border-style:solid;border-color:#2563eb;background:linear-gradient(135deg,#eff6ff 0%,#ffffff 60%,#dbeafe 100%);">
+                                                <h6 class="fw-bold text-primary-emphasis mb-0 d-flex align-items-center gap-2">
+                                                    <i class="bi bi-box2-heart-fill fs-3"></i>
+                                                    Sahibe Teslim Et & Süreci Tamamla
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Eşyayı şahsen teslim aldığınızda tıklayın. Kimlik kontrolü şarttır.
+                                                </small>
+                                                <div>
+                                                    <label class="form-label small fw-semibold text-muted mb-1">Teslim Notu (İsteğe bağlı)</label>
+                                                    <textarea name="adminNotu"
+                                                              maxlength="250" rows="2"
+                                                              class="form-control rounded-3 border border-primary-subtle"
+                                                              placeholder="Örn: TC kimlik kontrol edildi, imza alındı, saat 14:30 teslim edildi."></textarea>
+                                                </div>
+                                                <button type="submit"
+                                                        class="btn w-100 rounded-3 py-3 fw-bold text-white fs-5 shadow-lg mt-auto"
+                                                        style="background:linear-gradient(135deg,#2563eb 0%,#4f46e5 50%,#6366f1 100%);
+                                                               transition:all .15s ease;"
+                                                        onmouseover="this.style.filter='brightness(1.08)';this.style.transform='translateY(-2px)';"
+                                                        onmouseout="this.style.filter='';this.style.transform='';">
+                                                    <i class="bi bi-check2-square fs-3 me-2"></i>
+                                                    ✅ EŞYAYI TESLİM ET & SÜRECİ KAPAT
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    // --- AŞAMA 3: TAMAMLANDI (TESLİM EDİLDİ) ---
+                    else if (Model.Durum == EslesmeDurumu.TeslimEdildi)
+                    {
+                        <div class="card border-3 rounded-4 shadow-xl overflow-hidden mb-4"
+                             style="border-style:solid;border-color:#2563eb;background:linear-gradient(135deg,#eff6ff 0%,#ffffff 50%,#ecfeff 100%);">
+                            <div class="card-header border-0 py-5 px-4 px-sm-5 text-center position-relative overflow-hidden"
+                                 style="background:linear-gradient(135deg,#2563eb 0%,#6366f1 45%,#8b5cf6 100%);">
+                                <div class="position-relative z-1">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle text-primary bg-white shadow-lg mb-3"
+                                         style="width:88px;height:88px;">
+                                        <i class="bi bi-check2-all display-4"></i>
+                                    </div>
+                                    <h3 class="text-white fw-bold mb-2">✅ TAMAMLANDI</h3>
+                                    <p class="text-white opacity-90 mb-0">
+                                        Eşya sahibine teslim edildi, süreç başarıyla sona erdi.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="card-body p-4 p-sm-5">
+                                <!-- TESLIM ISLEMI OZETI -->
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <h6 class="fw-bold text-primary mb-3 d-flex align-items-center gap-2">
+                                            <i class="bi bi-receipt-cutoff fs-4"></i>
+                                            Teslim İşlemi Özeti
+                                        </h6>
+                                        @if (Model.TeslimIslemi == null)
+                                        {
+                                            <div class="alert alert-warning border-0 rounded-3">
+                                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                                Bu eşleşme için <strong>Teslim Kaydı</strong> oluşturulmamış. (Normal değil, kontrol ediniz.)
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="card border-2 border-primary-subtle rounded-4 overflow-hidden">
+                                                <div class="card-header bg-primary-subtle">
+                                                    <div class="fw-bold text-primary-emphasis">
+                                                        Belge No: #T-@(Model.TeslimIslemi?.Id ?? 0)
+                                                    </div>
+                                                </div>
+                                                <div class="card-body bg-white">
+                                                    <table class="table table-borderless mb-0 small">
+                                                        <tbody>
+                                                            <tr>
+                                                                <th class="w-50 text-muted"><i class="bi bi-calendar2-check me-1"></i>Teslim Tarihi</th>
+                                                                <td class="fw-semibold">@(Model.TeslimIslemi!.TeslimTarihi.ToString("dd.MM.yyyy"))</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-clock me-1"></i>Teslim Saati</th>
+                                                                <td class="fw-semibold">@(Model.TeslimIslemi!.TeslimSaati.HasValue ? Model.TeslimIslemi.TeslimSaati.Value.ToString(@"hh\:mm") : "-")</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-geo-alt me-1"></i>Teslim Yeri</th>
+                                                                <td class="fw-semibold">@Model.TeslimIslemi.TeslimYeri</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-person-check me-1"></i>Teslim Eden Personel</th>
+                                                                <td class="fw-semibold">@(!string.IsNullOrWhiteSpace(Model.TeslimIslemi!.TeslimEdenUser?.Ad + " " + Model.TeslimIslemi.TeslimEdenUser?.Soyad)
+                                                                    ? (Model.TeslimIslemi.TeslimEdenUser!.Ad + " " + Model.TeslimIslemi.TeslimEdenUser!.Soyad)
+                                                                    : (!string.IsNullOrWhiteSpace(Model.OnaylayanAdmin) ? Model.OnaylayanAdmin : "-"))</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-person me-1"></i>Teslim Alan Kişi</th>
+                                                                <td class="fw-bold text-dark">@Model.TeslimIslemi.TeslimAlanKisi</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-telephone me-1"></i>İletişim Telefonu</th>
+                                                                <td class="fw-semibold">@(string.IsNullOrWhiteSpace(Model.TeslimIslemi.IletisimTelefonu) ? "-" : Model.TeslimIslemi.IletisimTelefonu)</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-hand-thumbs-up me-1"></i>Teslim Şekli</th>
+                                                                <td class="fw-semibold">@Model.TeslimIslemi.TeslimSekli</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th class="text-muted"><i class="bi bi-pencil-square me-1"></i>İmza Onayı</th>
+                                                                <td>
+                                                                    @if (Model.TeslimIslemi.ImzaOnayi)
+                                                                    {
+                                                                        <span class="badge bg-success text-white rounded-pill"><i class="bi bi-check2 me-1"></i>Alındı</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-warning text-dark rounded-pill">Yok</span>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                            @if (!string.IsNullOrWhiteSpace(Model.TeslimIslemi.EkNotlar))
+                                                            {
+                                                                <tr>
+                                                                    <th class="text-muted align-top"><i class="bi bi-sticky me-1"></i>Ek Notlar</th>
+                                                                    <td class="text-muted"><small>@Model.TeslimIslemi.EkNotlar</small></td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                        <div class="h-100 d-flex flex-column justify-content-between gap-3">
+                                            <div class="p-4 rounded-4 border border-success-subtle bg-success bg-opacity-5">
+                                                <h6 class="fw-bold text-success-emphasis mb-3">
+                                                    <i class="bi bi-patch-check-fill me-1"></i>
+                                                    Süreç Tamamlandı Bilgileri
+                                                </h6>
+                                                <div class="d-flex flex-column gap-2 small">
+                                                    <div class="d-flex justify-content-between border-bottom border-success-subtle py-2">
+                                                        <span class="fw-semibold text-muted">Başvuru Numarası:</span>
+                                                        <span class="fw-bold">#@(Model.KayipBildirimi?.Id ?? 0)</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between border-bottom border-success-subtle py-2">
+                                                        <span class="fw-semibold text-muted">Başvuru Son Durum:</span>
+                                                        <span class="badge rounded-pill bg-success text-white px-3 py-2">Tamamlandı</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between border-bottom border-success-subtle py-2">
+                                                        <span class="fw-semibold text-muted">Bulunan Eşya No:</span>
+                                                        <span class="fw-bold">#@(Model.KayipEsya?.Id ?? 0)</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between py-2">
+                                                        <span class="fw-semibold text-muted">Eşya Son Durum:</span>
+                                                        <span class="badge rounded-pill bg-primary text-white px-3 py-2">Sahibe Teslim Edildi</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(Model.AdminNotu))
+                                            {
+                                                <div class="p-3 rounded-3 bg-light border small">
+                                                    <strong class="d-block mb-1"><i class="bi bi-journal-text me-1"></i>Süreç Notları:</strong>
+                                                    <pre class="mb-0 text-muted" style="white-space:pre-wrap;">@Model.AdminNotu</pre>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    // --- AŞAMA 4: REDDEDİLDİ ---
+                    else if (Model.Durum == EslesmeDurumu.Reddedildi)
+                    {
+                        <div class="card border-3 rounded-4 shadow-lg overflow-hidden mb-4"
+                             style="border-style:solid;border-color:#dc2626;background:linear-gradient(135deg,#fef2f2 0%,#ffffff 55%,#fee2e2 100%);">
+                            <div class="card-header bg-transparent border-0 py-4 px-4 px-sm-5">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-3 text-white shadow-lg"
+                                         style="width:58px;height:58px;background:linear-gradient(135deg,#dc2626,#991b1b);">
+                                        <i class="bi bi-x-octagon fs-3"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <h5 class="mb-0 fw-bold text-danger-emphasis">❌ Eşleşme Reddedildi</h5>
+                                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-semibold px-3 py-2">
+                                                <i class="bi bi-x-circle-fill me-1"></i>
+                                                Reddedildi
+                                            </span>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-info-circle text-danger me-1"></i>
+                                            Bu eşleşme önerisi reddedildi. Gerekirse yeniden değerlendirilebilir (Onayla) veya silinebilir.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body bg-white bg-opacity-70 p-4 p-sm-5">
+                                <div class="row g-4 align-items-stretch">
+                                    <div class="col-lg-7">
+                                        @if (!string.IsNullOrWhiteSpace(Model.AdminNotu))
+                                        {
+                                            <div class="h-100 p-4 rounded-4 border border-danger-subtle bg-danger bg-opacity-5">
+                                                <h6 class="fw-bold text-danger-emphasis mb-2"><i class="bi bi-chat-square-text me-1"></i>Red Gerekçesi</h6>
+                                                <pre class="mb-0 text-dark fw-medium" style="white-space:pre-wrap;">@Model.AdminNotu</pre>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-secondary border-0 rounded-4 mb-0">
+                                                <i class="bi bi-info-circle me-2"></i>
+                                                Bu eşleşme için red gerekçesi (admin notu) yazılmamış.
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-lg-5 d-flex flex-column gap-2 justify-content-stretch">
+                                        <form asp-controller="Eslesme" asp-action="Onayla" method="post"
+                                              class="flex-grow-1"
+                                              onsubmit="return confirm('⚠️ Bu eşleşme YENİDEN ONAYLANACAK. Emin misiniz?');">
+                                            <input type="hidden" name="id" value="@Model.Id" />
+                                            <input type="hidden" name="adminNotu" value="Reddedilen öneri yeniden onaylandı." />
+                                            <button type="submit"
+                                                    class="btn w-100 h-100 rounded-4 py-3 fw-bold text-white shadow-lg"
+                                                    style="background:linear-gradient(135deg,#059669 0%,#047857 100%);">
+                                                <i class="bi bi-arrow-counterclockwise me-2"></i>
+                                                🔄 Yeniden Onayla (Hatalı Red ise)
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <!-- Alt Footer: Kısa Nav -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top pt-4 mt-4">
                     <a asp-controller="Eslesme"
                        asp-action="Index"
                        class="btn btn-outline-secondary px-4 rounded-3 shadow-sm">
                         <i class="bi bi-arrow-left me-1"></i>
-                        Listeye Dön
+                        Eşleşmeler Listesine Dön
                     </a>
                     <div class="d-flex gap-2 flex-wrap">
-
-                        @if (Model.Durum == EslesmeDurumu.Beklemede)
-                        {
-                            <form asp-controller="Eslesme" asp-action="Onayla" method="post"
-                                  onsubmit="return confirm('Bu eşleşmeyi ONAYLAMAK istediğinize emin misiniz?');">
-                                <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="btn btn-success px-4 rounded-3 shadow-sm">
-                                    <i class="bi bi-check2-circle me-1"></i>
-                                    Onayla
-                                </button>
-                            </form>
-                            <form asp-controller="Eslesme" asp-action="Reddet" method="post"
-                                  onsubmit="return confirm('Bu eşleşmeyi REDDETMEK istediğinize emin misiniz?');">
-                                <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="btn btn-danger px-4 rounded-3 shadow-sm">
-                                    <i class="bi bi-x-circle me-1"></i>
-                                    Reddet
-                                </button>
-                            </form>
-                        }
-
-                        @if (Model.Durum == EslesmeDurumu.Onaylandi)
-                        {
-                            <form asp-controller="Eslesme" asp-action="TeslimEt" method="post"
-                                  onsubmit="return confirm('Bu eşleşme TESLİM EDİLDİ olarak işaretlensin mi?');">
-                                <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="btn btn-primary px-4 rounded-3 shadow-sm">
-                                    <i class="bi bi-box me-1"></i>
-                                    Teslim Edildi
-                                </button>
-                            </form>
-                        }
-
                         <form asp-controller="Eslesme" asp-action="Sil" method="post"
-                              onsubmit="return confirm('Bu eşleşmeyi SİLMEK istediğinize emin misiniz?');">
+                              onsubmit="return confirm('⚠️ Bu eşleşme KALICI olarak silinecek (Pasifleştirilecek). Emin misiniz?');">
                             <input type="hidden" name="id" value="@Model.Id" />
                             <button type="submit" class="btn btn-outline-danger px-4 rounded-3 shadow-sm">
                                 <i class="bi bi-trash me-1"></i>
-                                Sil
+                                Eşleşmeyi Sil
                             </button>
                         </form>
-
                     </div>
                 </div>
 
@@ -324,3 +729,11 @@
 
     </div>
 </div>
+
+<style>
+    @@keyframes pulsebekleyen{
+        0%,100%{ box-shadow:0 14px 28px rgba(245,158,11,0.35); }
+        50%{ box-shadow:0 18px 36px rgba(245,158,11,0.6), 0 0 0 12px rgba(245,158,11,0.18); }
+    }
+    .text-orange-emphasis{ color:#9a3412; }
+</style>

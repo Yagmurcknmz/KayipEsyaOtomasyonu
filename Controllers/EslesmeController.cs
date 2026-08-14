@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using FuzzySharp;
 
 namespace KayipEsyaOtomasyonu.Controllers
 {
@@ -85,6 +86,14 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             ViewBag.TumDurumlar = durumlar;
 
+            // ---- SEKME SAYACLARI (Aktif tüm kayıtlar üzerinden) ----
+            var tumAktif = _context.Eslesmeler.AsNoTracking().Where(x => x.AktifMi);
+            ViewBag.SayacToplam = await tumAktif.CountAsync();
+            ViewBag.SayacBekleyen = await tumAktif.CountAsync(x => x.Durum == EslesmeDurumu.Beklemede);
+            ViewBag.SayacOnaylanan = await tumAktif.CountAsync(x => x.Durum == EslesmeDurumu.Onaylandi);
+            ViewBag.SayacReddedilen = await tumAktif.CountAsync(x => x.Durum == EslesmeDurumu.Reddedildi);
+            ViewBag.SayacTeslim = await tumAktif.CountAsync(x => x.Durum == EslesmeDurumu.TeslimEdildi);
+
             return View(list);
         }
 
@@ -100,6 +109,8 @@ namespace KayipEsyaOtomasyonu.Controllers
                     .ThenInclude(x => x!.Vatandas)
                 .Include(x => x.KayipEsya)
                     .ThenInclude(x => x!.Kategori)
+                .Include(x => x.TeslimIslemi) // TESLIM ISLEMI DETAYINI da dahil et
+                    .ThenInclude(t => t!.TeslimEdenUser)
                 .FirstOrDefaultAsync(x => x.Id == id.Value);
 
             if (eslesme == null) return NotFound();
@@ -133,7 +144,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             var aktifKayitlar = await _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
-                .Where(x => x.AktifMi && x.Durum != "Teslim Edildi")
+                .Where(x => x.AktifMi && x.Durum != "Teslim Edildi" && x.Durum != "Sahibe Teslim Edildi")
                 .ToListAsync();
 
             int eklenen = 0;
@@ -156,71 +167,35 @@ namespace KayipEsyaOtomasyonu.Controllers
                 var basvuruRenkLower = basvuru.Renk?.Trim().ToLowerInvariant() ?? "";
                 var basvuruOzellikLower = basvuru.AyirtEdiciOzellik?.Trim().ToLowerInvariant() ?? "";
 
-                foreach (var kayit in aktifKayitlar)
+                // Basvuruya en yakin 10 adet KayitEsya bul (performans icin) sonra fuzzy uygula:
+                // Ilk filtre: Kategori ayni OLANLAR + Ad icinde herhangi bir kelime gecenler (genis filtre)
+                var adKelimeleri = basvuruAdLower.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(3).ToList();
+
+                var potansiyelKayitlar = aktifKayitlar
+                    .Where(k =>
+                        // Kategori ayni ise al (en onemli filtre)
+                        (basvuru.KategoriId > 0 && k.KategoriId == basvuru.KategoriId)
+                        // Ya da marka ayni ise:
+                        || (!string.IsNullOrEmpty(basvuruMarkaLower) && !string.IsNullOrEmpty(k.Marka) && k.Marka!.ToLowerInvariant().Contains(basvuruMarkaLower))
+                        // Ya da ad anahtar kelimelerinden biri geciyorsa:
+                        || (adKelimeleri.Count > 0 && !string.IsNullOrEmpty(k.EsyaAdi) && adKelimeleri.Any(kel => k.EsyaAdi!.ToLowerInvariant().Contains(kel)))
+                        // Ya da renk ayni ise:
+                        || (!string.IsNullOrEmpty(basvuruRenkLower) && !string.IsNullOrEmpty(k.Renk) && k.Renk!.ToLowerInvariant().Contains(basvuruRenkLower)))
+                    .Take(80) // 80 kayit uzerinden fuzzy uygula (performans)
+                    .ToList();
+
+                // Her potansiyel icin FUZZY SKOR hesapla, threshold 45 ustu ise kaydet:
+                foreach (var kayit in potansiyelKayitlar)
                 {
                     if (mevcutSet.Contains((basvuru.Id, kayit.Id)))
                     {
                         continue;
                     }
 
-                    int skor = 0;
-                    var detay = new StringBuilder();
+                    (int skor, string detay) = FuzzyHelper.BasvuruEsyaBenzerligi(basvuru, kayit);
 
-                    if (basvuru.KategoriId > 0 && basvuru.KategoriId == kayit.KategoriId)
-                    {
-                        skor += 35;
-                        detay.Append("Kategori eşleşmesi, ");
-                    }
-
-                    if (!string.IsNullOrEmpty(basvuruAdLower))
-                    {
-                        if (!string.IsNullOrEmpty(kayit.EsyaAdi) &&
-                            kayit.EsyaAdi.ToLowerInvariant().Contains(basvuruAdLower))
-                        {
-                            skor += 30;
-                            detay.Append("Eşya adı eşleşmesi, ");
-                        }
-                        else if (basvuruAdLower.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                            .Any(kelime => !string.IsNullOrEmpty(kayit.EsyaAdi) &&
-                                           kayit.EsyaAdi.ToLowerInvariant().Contains(kelime)))
-                        {
-                            skor += 15;
-                            detay.Append("Eşya adı kelime eşleşmesi, ");
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(basvuruMarkaLower))
-                    {
-                        if (!string.IsNullOrEmpty(kayit.Marka) &&
-                            kayit.Marka.ToLowerInvariant().Contains(basvuruMarkaLower))
-                        {
-                            skor += 15;
-                            detay.Append("Marka eşleşmesi, ");
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(basvuruRenkLower))
-                    {
-                        if (!string.IsNullOrEmpty(kayit.Renk) &&
-                            kayit.Renk.ToLowerInvariant().Contains(basvuruRenkLower))
-                        {
-                            skor += 10;
-                            detay.Append("Renk eşleşmesi, ");
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(basvuruOzellikLower))
-                    {
-                        if (!string.IsNullOrEmpty(kayit.AyirtEdiciOzellik) &&
-                            kayit.AyirtEdiciOzellik.ToLowerInvariant()
-                                .Intersect(basvuruOzellikLower).Count() > 5)
-                        {
-                            skor += 10;
-                            detay.Append("Ayırt edici özellik benzerliği, ");
-                        }
-                    }
-
-                    if (skor >= 25)
+                    // Threshold: %45 ustu "eslesme olabilir" olarak isaretle (daha onceki 25'ten daha saglikli)
+                    if (skor >= 45)
                     {
                         var yeni = new Eslesme
                         {
@@ -228,16 +203,17 @@ namespace KayipEsyaOtomasyonu.Controllers
                             KayipEsyaId = kayit.Id,
                             Tur = EslesmeTuru.Otomatik,
                             Durum = EslesmeDurumu.Beklemede,
-                            Skor = skor > 100 ? 100 : skor,
-                            EslesmeDetay = detay.ToString().Trim().TrimEnd(',')
+                            Skor = Math.Clamp(skor, 0, 100),
+                            EslesmeDetay = detay
                         };
 
                         _context.Eslesmeler.Add(yeni);
                         mevcutSet.Add((basvuru.Id, kayit.Id));
                         eklenen++;
 
-                        if (skor >= 70)
+                        if (skor >= 75)
                         {
+                            // %75+ cok yuksek benzerlik: basvuruyu "Eslesme Bulundu" olarak isaretle
                             basvuru.Durum = "Eşleşme Bulundu";
                             basvuru.GuncellenmeTarihi = DateTime.Now;
                             _context.KayipBildirimleri.Update(basvuru);
@@ -320,9 +296,9 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             TempData["BasariliMesaj"] =
                 $"Eşleşme #{id} başarıyla ONAYLANDI. Eşya ve Başvuru durumları güncellendi. " +
-                "Vatandaşa bildirim gönderildi!";
+                "Vatandaşa bildirim gönderildi! Şimdi aşağıdan TESLİM ET işlemini yapabilirsiniz.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
@@ -331,8 +307,14 @@ namespace KayipEsyaOtomasyonu.Controllers
             int id,
             string? adminNotu)
         {
-            var eslesme = await _context.Eslesmeler.FindAsync(id);
+            var eslesme = await _context.Eslesmeler
+                .Include(x => x.KayipBildirimi)
+                .Include(x => x.KayipEsya)
+                .FirstOrDefaultAsync(x => x.Id == id);
             if (eslesme == null) return NotFound();
+
+            // (ÖNEMLİ) Eğer bu eşleşme ÖNCE ONALANDI ise, o zaman Başvuru ve Eşya durumlarını ESKİ HALİNE geri al:
+            bool onaylanmisti = eslesme.Durum == EslesmeDurumu.Onaylandi;
 
             eslesme.Durum = EslesmeDurumu.Reddedildi;
             eslesme.IslemTarihi = DateTime.Now;
@@ -341,15 +323,59 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             if (!string.IsNullOrWhiteSpace(adminNotu))
             {
+                var onceki = string.IsNullOrWhiteSpace(eslesme.AdminNotu) ? "" : eslesme.AdminNotu + Environment.NewLine;
                 eslesme.AdminNotu =
-                    $"[{DateTime.Now:dd.MM.yyyy HH:mm}] (Ret) {adminNotu.Trim()}";
+                    $"{onceki}[{DateTime.Now:dd.MM.yyyy HH:mm}] (Ret) {adminNotu.Trim()}";
+            }
+
+            // ---- DURUM GERİ ALMA (Eşleşme Reddedildiğinde Boşa Çıkan Kayıtlar Tekrar Havuza Döner!) ----
+            if (eslesme.KayipEsya != null)
+            {
+                if (eslesme.KayipEsya.Durum == "Eşleşme Bulundu" ||
+                    eslesme.KayipEsya.Durum == "Teslim Edildi" ||
+                    eslesme.KayipEsya.Durum == "Sahibe Teslim Edildi")
+                {
+                    eslesme.KayipEsya.Durum = "Depoda";
+                    eslesme.KayipEsya.GuncellenmeTarihi = DateTime.Now;
+                }
+            }
+            if (eslesme.KayipBildirimi != null)
+            {
+                if (eslesme.KayipBildirimi.Durum == "Eşleşme Bulundu" ||
+                    eslesme.KayipBildirimi.Durum == "Teslim Edildi" ||
+                    eslesme.KayipBildirimi.Durum == "Tamamlandı")
+                {
+                    eslesme.KayipBildirimi.Durum = "Eşleşme Aranıyor";
+                    eslesme.KayipBildirimi.GuncellenmeTarihi = DateTime.Now;
+
+                    // Reddedildi bildirimi gönder:
+                    if (!string.IsNullOrEmpty(eslesme.KayipBildirimi.VatandasId) && onaylanmisti)
+                    {
+                        _context.Bildirimler.Add(new Bildirim
+                        {
+                            AliciUserId = eslesme.KayipBildirimi.VatandasId,
+                            KayipBildirimiId = eslesme.KayipBildirimi.Id,
+                            EslesmeId = eslesme.Id,
+                            Baslik = "ℹ️ Eşleşme Reddedildi / Değerlendiriliyor",
+                            Icerik = $"#{eslesme.KayipBildirimi.Id} numaralı \"{eslesme.KayipBildirimi.EsyaAdi}\" başvurunuz için " +
+                                     $"yapılan bir eşleşme önerisi reddedildi. Yeni eşleşmeler için aramalar devam etmektedir.",
+                            Turu = BildirimTuru.GenelDuyuru,
+                            OkunduMu = false,
+                            AktifMi = true,
+                            OlusturulmaTarihi = DateTime.Now
+                        });
+                    }
+                }
             }
 
             await _context.SaveChangesAsync();
 
-            TempData["BasariliMesaj"] = $"Eşleşme #{id} reddedildi.";
+            TempData["BasariliMesaj"] =
+                $"Eşleşme #{id} reddedildi. " +
+                (onaylanmisti ? "Başvuru ve Eşya durumları ESKİ (Beklemede) haline geri alındı." : "") +
+                " Başka bir eşleşme önerisi bekleniyor.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
@@ -379,13 +405,13 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             if (eslesme.KayipEsya != null)
             {
-                eslesme.KayipEsya.Durum = "Teslim Edildi";
+                eslesme.KayipEsya.Durum = "Sahibe Teslim Edildi";
                 eslesme.KayipEsya.GuncellenmeTarihi = DateTime.Now;
             }
 
             if (eslesme.KayipBildirimi != null)
             {
-                eslesme.KayipBildirimi.Durum = "Teslim Edildi";
+                eslesme.KayipBildirimi.Durum = "Tamamlandı";
                 eslesme.KayipBildirimi.GuncellenmeTarihi = DateTime.Now;
 
                 if (!string.IsNullOrEmpty(eslesme.KayipBildirimi.VatandasId))
@@ -440,37 +466,67 @@ namespace KayipEsyaOtomasyonu.Controllers
             await _context.SaveChangesAsync();
 
             TempData["BasariliMesaj"] =
-                $"Eşleşme #{id} TESLİM EDİLDİ olarak işaretlendi. " +
-                "Teslim kaydı oluşturuldu ve vatandaşa bildirim gönderildi!";
+                $"Eşleşme #{id} ✅ TAMAMLANDI: Sahibe Teslim Edildi. " +
+                "Teslim kaydı ve Süreç SONA ERDİ.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpGet]
         public async Task<IActionResult> YeniEslesme(int? basvuruId, int? esyaId)
         {
+            // MODERNLESTIRILDI: Artik SelectListItem degil ZENGIN nesne listesi (Resim thumbnails + Marka + Renk + Tarih)
             ViewBag.Basvurular = await _context.KayipBildirimleri
                 .AsNoTracking()
                 .Include(x => x.Kategori)
-                .Where(x => x.AktifMi)
+                .Include(x => x.Vatandas)
+                .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
+                .Where(x => x.AktifMi &&
+                    (x.Durum == "Yeni Başvuru" || x.Durum == "İnceleniyor" || x.Durum == "Eşleşme Aranıyor"))
                 .OrderByDescending(x => x.BasvuruTarihi)
                 .Select(x => new
                 {
                     x.Id,
-                    Baslik = $"#{x.Id} - {x.EsyaAdi} ({x.Kategori!.Ad})"
+                    x.EsyaAdi,
+                    KategoriAd = x.Kategori != null ? x.Kategori.Ad : "-",
+                    x.Marka,
+                    x.Model,
+                    x.Renk,
+                    x.BasvuruTarihi,
+                    VatandasAdSoyad = (x.Vatandas != null ? x.Vatandas.Ad + " " + x.Vatandas.Soyad : "-"),
+                    BasvuruNo = x.BasvuruNo ?? ("#" + x.Id),
+                    Thumbnail = (x.Resimler != null && x.Resimler.Any()
+                        ? (!string.IsNullOrWhiteSpace(x.Resimler.First().ThumbnailYolu) ? ("/" + x.Resimler.First().ThumbnailYolu!.Replace("\\", "/"))
+                            : (!string.IsNullOrWhiteSpace(x.Resimler.First().DosyaYolu) ? ("/" + x.Resimler.First().DosyaYolu!.Replace("\\", "/")) : null))
+                        : null)
                 })
+                .Take(150)
                 .ToListAsync();
 
             ViewBag.Esyalar = await _context.KayipEsyalar
                 .AsNoTracking()
                 .Include(x => x.Kategori)
-                .Where(x => x.AktifMi)
+                .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
+                .Where(x => x.AktifMi &&
+                    (x.Durum == "Depoda" || x.Durum == "Yeni Kayıt" || x.Durum == null || x.Durum == ""))
                 .OrderByDescending(x => x.OlusturmaTarihi)
                 .Select(x => new
                 {
                     x.Id,
-                    Baslik = $"#{x.Id} - {x.EsyaAdi} ({x.Kategori!.Ad})"
+                    x.EsyaAdi,
+                    KategoriAd = x.Kategori != null ? x.Kategori.Ad : "-",
+                    x.Marka,
+                    x.Model,
+                    x.Renk,
+                    x.OlusturmaTarihi,
+                    x.BulunmaYeri,
+                    x.RafNo,
+                    Thumbnail = (x.Resimler != null && x.Resimler.Any()
+                        ? (!string.IsNullOrWhiteSpace(x.Resimler.First().ThumbnailYolu) ? ("/" + x.Resimler.First().ThumbnailYolu!.Replace("\\", "/"))
+                            : (!string.IsNullOrWhiteSpace(x.Resimler.First().DosyaYolu) ? ("/" + x.Resimler.First().DosyaYolu!.Replace("\\", "/")) : null))
+                        : null)
                 })
+                .Take(150)
                 .ToListAsync();
 
             return View(new Eslesme
@@ -489,43 +545,74 @@ namespace KayipEsyaOtomasyonu.Controllers
         {
             if (model.KayipBildirimiId <= 0 || model.KayipEsyaId <= 0)
             {
-                ModelState.AddModelError("", "Başvuru ve Eşya seçmelisiniz.");
+                ModelState.AddModelError("", "Lütfen sol listeden bir KAYIP BAŞVURUSU ve sağ listeden bir BULUNAN EŞYA seçin.");
             }
 
             var varMi = await _context.Eslesmeler
                 .AnyAsync(x =>
+                    x.AktifMi &&
                     x.KayipBildirimiId == model.KayipBildirimiId &&
                     x.KayipEsyaId == model.KayipEsyaId);
 
             if (varMi)
             {
-                ModelState.AddModelError("", "Bu eşleşme zaten tanımlı.");
+                ModelState.AddModelError("", "Bu (Başvuru + Eşya) kombinasyonu için zaten bir eşleşme kaydı var. Eşleşmeler sayfasından görüntüleyebilirsiniz.");
             }
 
             if (!ModelState.IsValid)
             {
+                // HATA VARSA: Tekrar aynı ZENGIN listeleri dondur
                 ViewBag.Basvurular = await _context.KayipBildirimleri
                     .AsNoTracking()
                     .Include(x => x.Kategori)
-                    .Where(x => x.AktifMi)
+                    .Include(x => x.Vatandas)
+                    .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
+                    .Where(x => x.AktifMi &&
+                        (x.Durum == "Yeni Başvuru" || x.Durum == "İnceleniyor" || x.Durum == "Eşleşme Aranıyor"))
                     .OrderByDescending(x => x.BasvuruTarihi)
                     .Select(x => new
                     {
                         x.Id,
-                        Baslik = $"#{x.Id} - {x.EsyaAdi} ({x.Kategori!.Ad})"
+                        x.EsyaAdi,
+                        KategoriAd = x.Kategori != null ? x.Kategori.Ad : "-",
+                        x.Marka,
+                        x.Model,
+                        x.Renk,
+                        x.BasvuruTarihi,
+                        VatandasAdSoyad = (x.Vatandas != null ? x.Vatandas.Ad + " " + x.Vatandas.Soyad : "-"),
+                        BasvuruNo = x.BasvuruNo ?? ("#" + x.Id),
+                        Thumbnail = (x.Resimler != null && x.Resimler.Any()
+                            ? (!string.IsNullOrWhiteSpace(x.Resimler.First().ThumbnailYolu) ? ("/" + x.Resimler.First().ThumbnailYolu!.Replace("\\", "/"))
+                                : (!string.IsNullOrWhiteSpace(x.Resimler.First().DosyaYolu) ? ("/" + x.Resimler.First().DosyaYolu!.Replace("\\", "/")) : null))
+                            : null)
                     })
+                    .Take(150)
                     .ToListAsync();
 
                 ViewBag.Esyalar = await _context.KayipEsyalar
                     .AsNoTracking()
                     .Include(x => x.Kategori)
-                    .Where(x => x.AktifMi)
+                    .Include(x => x.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
+                    .Where(x => x.AktifMi &&
+                        (x.Durum == "Depoda" || x.Durum == "Yeni Kayıt" || x.Durum == null || x.Durum == ""))
                     .OrderByDescending(x => x.OlusturmaTarihi)
                     .Select(x => new
                     {
                         x.Id,
-                        Baslik = $"#{x.Id} - {x.EsyaAdi} ({x.Kategori!.Ad})"
+                        x.EsyaAdi,
+                        KategoriAd = x.Kategori != null ? x.Kategori.Ad : "-",
+                        x.Marka,
+                        x.Model,
+                        x.Renk,
+                        x.OlusturmaTarihi,
+                        x.BulunmaYeri,
+                        x.RafNo,
+                        Thumbnail = (x.Resimler != null && x.Resimler.Any()
+                            ? (!string.IsNullOrWhiteSpace(x.Resimler.First().ThumbnailYolu) ? ("/" + x.Resimler.First().ThumbnailYolu!.Replace("\\", "/"))
+                                : (!string.IsNullOrWhiteSpace(x.Resimler.First().DosyaYolu) ? ("/" + x.Resimler.First().DosyaYolu!.Replace("\\", "/")) : null))
+                            : null)
                     })
+                    .Take(150)
                     .ToListAsync();
 
                 return View(model);
@@ -537,13 +624,20 @@ namespace KayipEsyaOtomasyonu.Controllers
             model.OlusturmaTarihi = DateTime.Now;
             if (model.Skor <= 0) model.Skor = 100;
 
+            // Kaydetmeden ONCE: Eğer Skor 100 ve EslesmeDetayı boş ise, admin için otomatik not ekle:
+            if (string.IsNullOrWhiteSpace(model.EslesmeDetay) && model.Skor >= 95)
+            {
+                model.EslesmeDetay = "Personel tarafından manuel eşleştirme kaydedildi. (Varsayılan Skor: %" + model.Skor + ")";
+            }
+
             _context.Eslesmeler.Add(model);
             await _context.SaveChangesAsync();
 
             TempData["BasariliMesaj"] =
-                $"Manuel eşleşme başarıyla oluşturuldu. (Eşleşme #{model.Id})";
+                $"Manuel eşleşme başarıyla oluşturuldu. (Eşleşme #{model.Id}) " +
+                "Şimdi aşağıdan ONAYLA veya ardından TESLİM ET işlemlerini yapabilirsiniz.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details), new { id = model.Id });
         }
 
         [HttpPost]

@@ -73,5 +73,7 @@ namespace KayipEsyaOtomasyonu.Models
         public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
 
         public DateTime? GuncellenmeTarihi { get; set; }
+
+        public virtual TeslimIslemi? TeslimIslemi { get; set; }
     }
 }

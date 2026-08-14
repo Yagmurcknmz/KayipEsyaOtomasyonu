@@ -7,6 +7,20 @@
     var kategoriler = ViewBag.Kategoriler as IEnumerable<KayipEsyaOtomasyonu.Models.Kategori> ?? Enumerable.Empty<KayipEsyaOtomasyonu.Models.Kategori>();
     var seciliKategori = Model?.KategoriId;
     var arananMetin = Model?.Aranan ?? "";
+
+    // Skor badge yardimcisi (renk+ikon):
+    (string Sinif, string Ikon, string Etiket) SkorBilgi(int s) => s switch
+    {
+        >= 90 => ("skor-mukemmel",   "bi bi-stars",               "Mükemmel"),
+        >= 75 => ("skor-yuksek",     "bi bi-check-circle-fill",  "Yüksek"),
+        >= 55 => ("skor-orta",       "bi bi-hand-thumbs-up",     "Orta"),
+        >= 35 => ("skor-kismi",      "bi bi-exclamation-circle-fill", "Kısmi"),
+        _     => ("skor-dusuk",      "bi bi-x-circle-fill",     "Düşük"),
+    };
+
+    // Dictionary'leri al (ViewBag dynamic oldugu icin cast et):
+    var esyaSkorlari = ViewBag.FuzzyEsyaSkorlari as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var basvuruSkorlari = ViewBag.FuzzyBasvuruSkorlari as Dictionary<int, int> ?? new Dictionary<int, int>();
 }
 
 <div class="dashboard-header mb-4">
@@ -125,6 +139,10 @@
                             <thead>
                                 <tr>
                                     <th style="width:90px;">Görsel</th>
+                                    @if (!string.IsNullOrWhiteSpace(arananMetin))
+                                    {
+                                        <th style="width:140px;">Benzerlik %</th>
+                                    }
                                     <th>Eşya</th>
                                     <th>Kategori</th>
                                     <th>Marka / Model</th>
@@ -143,6 +161,12 @@
                                     var kapakYol = kapakResim != null ?
                                         (!string.IsNullOrWhiteSpace(kapakResim.ThumbnailYolu) ? ("/" + kapakResim.ThumbnailYolu.Replace("\\", "/")) : (!string.IsNullOrWhiteSpace(kapakResim.DosyaYolu) ? ("/" + kapakResim.DosyaYolu.Replace("\\", "/")) : null))
                                         : null;
+
+                                    int skor = 0;
+                                    var sb = (Sinif: "skor-dusuk", Ikon: "bi bi-x-circle-fill", Etiket: "Düşük");
+                                    bool skorGoster = !string.IsNullOrWhiteSpace(arananMetin) && esyaSkorlari.TryGetValue(esya.Id, out skor);
+                                    if (skorGoster) sb = SkorBilgi(skor);
+
                                     <tr>
                                         <td>
                                             @if (!string.IsNullOrWhiteSpace(kapakYol))
@@ -160,6 +184,15 @@
                                                 </div>
                                             }
                                         </td>
+                                        @if (skorGoster)
+                                        {
+                                            <td>
+                                                <span class="skor-badge @sb.Sinif" title="@sb.Etiket benzerlik">
+                                                    <i class="@sb.Ikon"></i>
+                                                    <span>%@skor</span>
+                                                </span>
+                                            </td>
+                                        }
                                         <td><strong>@esya.EsyaAdi</strong></td>
                                         <td>@(esya.Kategori?.Ad ?? "-")</td>
                                         <td>
@@ -250,6 +283,10 @@
                             <thead>
                                 <tr>
                                     <th style="width:90px;">Görsel</th>
+                                    @if (!string.IsNullOrWhiteSpace(arananMetin))
+                                    {
+                                        <th style="width:140px;">Benzerlik %</th>
+                                    }
                                     <th>Başvuru No</th>
                                     <th>Kayıp Eşya</th>
                                     <th>Kategori</th>
@@ -269,6 +306,12 @@
                                     var kapakYol = kapakResim != null ?
                                         (!string.IsNullOrWhiteSpace(kapakResim.ThumbnailYolu) ? ("/" + kapakResim.ThumbnailYolu.Replace("\\", "/")) : (!string.IsNullOrWhiteSpace(kapakResim.DosyaYolu) ? ("/" + kapakResim.DosyaYolu.Replace("\\", "/")) : null))
                                         : null;
+
+                                    int skorBasvuru = 0;
+                                    var sb2 = (Sinif: "skor-dusuk", Ikon: "bi bi-x-circle-fill", Etiket: "Düşük");
+                                    bool skorGoster2 = !string.IsNullOrWhiteSpace(arananMetin) && basvuruSkorlari.TryGetValue(b.Id, out skorBasvuru);
+                                    if (skorGoster2) sb2 = SkorBilgi(skorBasvuru);
+
                                     <tr>
                                         <td>
                                             @if (!string.IsNullOrWhiteSpace(kapakYol))
@@ -286,6 +329,15 @@
                                                 </div>
                                             }
                                         </td>
+                                        @if (skorGoster2)
+                                        {
+                                            <td>
+                                                <span class="skor-badge @sb2.Sinif" title="@sb2.Etiket benzerlik">
+                                                    <i class="@sb2.Ikon"></i>
+                                                    <span>%@skorBasvuru</span>
+                                                </span>
+                                            </td>
+                                        }
                                         <td>
                                             <span class="badge bg-dark text-white">@b.BasvuruNo</span>
                                         </td>

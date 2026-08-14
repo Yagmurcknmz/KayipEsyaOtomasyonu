@@ -104,6 +104,16 @@ namespace KayipEsyaOtomasyonu.Controllers
             if (user == null) return RedirectToAction(nameof(Index));
 
             var bildirim = await _context.Bildirimler
+                .Include(b => b.KayipBildirimi)
+                    .ThenInclude(kb => kb!.Kategori)
+                .Include(b => b.KayipBildirimi)!
+                    .ThenInclude(kb => kb!.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
+                .Include(b => b.Eslesme)
+                    .ThenInclude(e => e!.KayipEsya)
+                        .ThenInclude(ke => ke!.Kategori)
+                .Include(b => b.Eslesme)!
+                    .ThenInclude(e => e!.KayipEsya)
+                        .ThenInclude(ke => ke!.Resimler.Where(r => r.AktifMi && r.VarsayilanResimMi))
                 .FirstOrDefaultAsync(b =>
                     b.Id == id &&
                     b.AliciUserId == user.Id &&
@@ -118,19 +128,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            if (bildirim.KayipBildirimiId.HasValue)
-            {
-                return RedirectToAction("Details", "KayipBasvuru",
-                    new { id = bildirim.KayipBildirimiId.Value });
-            }
-
-            if (bildirim.EslesmeId.HasValue)
-            {
-                return RedirectToAction("Details", "Eslesme",
-                    new { id = bildirim.EslesmeId.Value });
-            }
-
-            return RedirectToAction(nameof(Bildirimlerim));
+            return View("BildirimDetay", bildirim);
         }
 
         [HttpGet]
@@ -191,6 +189,42 @@ namespace KayipEsyaOtomasyonu.Controllers
             var basvurularim = await basvurularimSorgu
                 .OrderByDescending(x => x.BasvuruTarihi)
                 .ToListAsync();
+
+            // ---- EKLENDI: Bulanik (Fuzzy) BENZERLIK SKORU hesapla + SKOR'A GORE AZALAN siralama ----
+            if (!string.IsNullOrWhiteSpace(aranan))
+            {
+                // 1. Bulunan Esyalar (Depoda bekleyen) icin her bir satirda Skor hesapla:
+                var esyaSkorlari = new Dictionary<int, int>();
+                foreach (var esya in bulunanlar)
+                {
+                    esyaSkorlari[esya.Id] = FuzzyHelper.AnahtarKelimeEsyaSkoru(aranan, esya);
+                }
+                // Skor yuksekten dusuge SIRALA (SIFIR olanlar sona):
+                bulunanlar = bulunanlar
+                    .OrderByDescending(e => esyaSkorlari.TryGetValue(e.Id, out int s) ? s : 0)
+                    .ThenByDescending(e => e.BulunmaTarihi)
+                    .ToList();
+                ViewBag.FuzzyEsyaSkorlari = esyaSkorlari;
+
+                // 2. Kendi basvurularim icin Skor hesapla + SIRALA:
+                var basvuruSkorlari = new Dictionary<int, int>();
+                foreach (var b in basvurularim)
+                {
+                    basvuruSkorlari[b.Id] = FuzzyHelper.AnahtarKelimeBasvuruSkoru(aranan, b);
+                }
+                basvurularim = basvurularim
+                    .OrderByDescending(b => basvuruSkorlari.TryGetValue(b.Id, out int s) ? s : 0)
+                    .ThenByDescending(b => b.BasvuruTarihi)
+                    .ToList();
+                ViewBag.FuzzyBasvuruSkorlari = basvuruSkorlari;
+            }
+            else
+            {
+                // Arama yoksa bos dictionary (View hata vermesin)
+                ViewBag.FuzzyEsyaSkorlari = new Dictionary<int, int>();
+                ViewBag.FuzzyBasvuruSkorlari = new Dictionary<int, int>();
+            }
+            // -------------------------------------------------------------------------------------
 
             var vm = new EsyaSorgulamaViewModel
             {

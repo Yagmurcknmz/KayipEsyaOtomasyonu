@@ -80,7 +80,7 @@ namespace KayipEsyaOtomasyonu.Models
         public string? TeslimEdenUserId { get; set; }
 
         [ForeignKey(nameof(TeslimEdenUserId))]
-        public ApplicationUser? TeslimEden { get; set; }
+        public ApplicationUser? TeslimEdenUser { get; set; }
 
         [Display(Name = "Teslim Alan Kişi")]
         [StringLength(150)]

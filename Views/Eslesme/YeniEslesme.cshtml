@@ -2,130 +2,1061 @@
 
 @{
     ViewData["Title"] = "Manuel Eşleştirme";
+    var basvurular = (ViewBag.Basvurular as System.Collections.IEnumerable)?.Cast<dynamic>().ToList() ?? new List<dynamic>();
+    var esyalar = (ViewBag.Esyalar as System.Collections.IEnumerable)?.Cast<dynamic>().ToList() ?? new List<dynamic>();
 }
 
-<div class="row justify-content-center">
-    <div class="col-xxl-9 col-xl-11">
+<div class="container-fluid px-3 px-xl-5 py-4">
 
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <!-- HEADER -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center justify-content-center rounded-4 shadow-lg"
+                 style="width:62px;height:62px;
+                        background:linear-gradient(135deg,#6366f1 0%,#ec4899 50%,#22c55e 100%);">
+                <i class="bi bi-link-45deg fs-2 text-white"></i>
+            </div>
+            <div>
+                <h2 class="mb-1 fw-bold" style="letter-spacing:-0.02em;">Manuel Eşleştirme</h2>
+                <p class="text-muted mb-0 small">
+                    <i class="bi bi-lightbulb text-warning me-1"></i>
+                    <strong>Adım 1:</strong> Soldan Kayıp Başvurusu → <strong>Adım 2:</strong> Sağdan Bulunan Eşya → <strong>Adım 3:</strong> Onayla
+                </p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Eslesme" asp-action="Index"
+               class="btn btn-outline-secondary rounded-3 px-4 py-2 shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i>
+                Eşleşmelere Dön
+            </a>
+        </div>
+    </div>
 
-            <div class="card-header bg-white py-3 border-0 border-bottom">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-3" style="width:52px;height:52px;">
-                        <i class="bi bi-hand-index-thumb fs-3 text-primary"></i>
+    <!-- FORM -->
+    <form asp-controller="Eslesme" asp-action="YeniEslesme" method="post" id="form-yeni-eslesme">
+        <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-4 mb-4"></div>
+
+        <!-- ADIM GÖSTERGESİ (SÜREKLİ GÖRÜNÜR) -->
+        <div class="card border-0 rounded-4 shadow-sm mb-4 overflow-hidden"
+             style="background:linear-gradient(135deg,#fefce8 0%,#f0f9ff 50%,#ecfeff 100%);">
+            <div class="card-body p-3 p-sm-4">
+                <div class="d-flex align-items-center gap-2 gap-sm-4">
+                    <!-- ADIM 1 -->
+                    <div id="adim-1" class="adim d-flex align-items-center gap-2 gap-sm-3 flex-grow-1 adim-aktif">
+                        <div class="adim-ikon d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold shadow"
+                             style="width:48px;height:48px;background:#ef4444;">1</div>
+                        <div class="min-w-0">
+                            <div class="adim-baslik fw-semibold mb-0 text-danger-emphasis">Kayıp Başvurusu Seç</div>
+                            <div class="adim-alt small text-muted">Sol listeden bir kart seçin</div>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="mb-0 fw-bold">Manuel Eşleştirme</h4>
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Otomatik eşleşme çıkmayan kayıtlar için buradan manuel bir eşleşme tanımlayabilirsiniz.
-                        </small>
+                    <i class="bi bi-chevron-compact-right text-muted fs-4 d-none d-sm-block"></i>
+                    <!-- ADIM 2 -->
+                    <div id="adim-2" class="adim d-flex align-items-center gap-2 gap-sm-3 flex-grow-1">
+                        <div class="adim-ikon d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold shadow"
+                             style="width:48px;height:48px;background:#94a3b8;">2</div>
+                        <div class="min-w-0">
+                            <div class="adim-baslik fw-semibold mb-0 text-muted">Bulunan Eşyayı Seç</div>
+                            <div class="adim-alt small text-muted">Sağ listeden bir kart seçin</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-compact-right text-muted fs-4 d-none d-sm-block"></i>
+                    <!-- ADIM 3 -->
+                    <div id="adim-3" class="adim d-flex align-items-center gap-2 gap-sm-3 flex-grow-1">
+                        <div class="adim-ikon d-inline-flex align-items-center justify-content-center rounded-circle text-white fw-bold shadow"
+                             style="width:48px;height:48px;background:#94a3b8;">3</div>
+                        <div class="min-w-0">
+                            <div class="adim-baslik fw-semibold mb-0 text-muted">Onayla & Kaydet</div>
+                            <div class="adim-alt small text-muted">Skor ve notu girin</div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="card-body p-4 bg-light bg-opacity-25">
-
-                <form asp-controller="Eslesme" asp-action="YeniEslesme" method="post">
-
-                    <div asp-validation-summary="All" class="alert alert-danger border-0 rounded-3 mb-3 d-none"></div>
-
-                    <div class="card border rounded-3 shadow-sm mb-4">
-                        <div class="card-header bg-white py-2 border-bottom pb-3">
-                            <h6 class="mb-0 fw-semibold text-primary d-flex align-items-center">
-                                <i class="bi bi-link-45deg me-2 fs-5"></i>
-                                Eşleştirilecek Kayıtlar
-                            </h6>
-                        </div>
-                        <div class="card-body bg-white">
-
-                            <div class="row g-3">
-
-                                <div class="col-md-6">
-                                    <label asp-for="KayipBildirimiId" class="form-label fw-semibold small text-uppercase text-muted mb-1">
-                                        Kayıp Başvurusu <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0 align-items-start" style="padding-top:.75rem;">
-                                            <i class="bi bi-person-arms-up text-danger"></i>
-                                        </span>
-                                        <select asp-for="KayipBildirimiId" size="10" class="form-select border-start-0 ps-0" style="min-height:150px;">
-                                            <option value="">-- Bir Başvuru Seçin --</option>
-                                            @if (ViewBag.Basvurular != null)
-                                            {
-                                                @foreach (var b in (dynamic)ViewBag.Basvurular)
-                                                {
-                                                    <option value="@b.Id">@b.Baslik</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="KayipBildirimiId" class="text-danger small d-block mt-1"></span>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label asp-for="KayipEsyaId" class="form-label fw-semibold small text-uppercase text-muted mb-1">
-                                        Bulunan Eşya <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0 align-items-start" style="padding-top:.75rem;">
-                                            <i class="bi bi-search-heart text-success"></i>
-                                        </span>
-                                        <select asp-for="KayipEsyaId" size="10" class="form-select border-start-0 ps-0" style="min-height:150px;">
-                                            <option value="">-- Bir Eşya Seçin --</option>
-                                            @if (ViewBag.Esyalar != null)
-                                            {
-                                                @foreach (var k in (dynamic)ViewBag.Esyalar)
-                                                {
-                                                    <option value="@k.Id">@k.Baslik</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="KayipEsyaId" class="text-danger small d-block mt-1"></span>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label asp-for="Skor" class="form-label fw-semibold small text-uppercase text-muted mb-1">
-                                        Eşleşme Skoru (%)
-                                    </label>
-                                    <input asp-for="Skor" type="number" min="0" max="100" class="form-control" />
-                                    <small class="text-muted d-block mt-1">Manuel eşleşmelerde varsayılan 100'dür.</small>
-                                </div>
-
-                                <div class="col-md-8">
-                                    <label asp-for="EslesmeDetay" class="form-label fw-semibold small text-uppercase text-muted mb-1">
-                                        Eşleşme Notu (Neden bu ikisi?)
-                                    </label>
-                                    <input asp-for="EslesmeDetay" class="form-control" placeholder="Manuel eşleştirme nedeni (önerilir)" />
-                                </div>
-
+        <!-- SABİT KAYDET BUTONU (SÜREKLİ GÖRÜNÜR - 2 seçim olunca AKTİF) -->
+        <div class="sticky-top z-3 mb-4">
+            <div class="card border-0 rounded-4 shadow overflow-hidden"
+                 id="action-bar">
+                <div class="card-body p-3 p-sm-4 d-flex flex-wrap align-items-center justify-content-between gap-3"
+                     style="background:linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.92));backdrop-filter:blur(12px);">
+                    <div class="d-flex align-items-center gap-3 min-w-0">
+                        <!-- DURUM BADGE -->
+                        <div id="durum-bilgi"
+                             class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 border"
+                             style="background:#fff7ed;border-color:#fed7aa;">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                                  style="width:34px;height:34px;background:#f97316;color:#fff;">
+                                <i class="bi bi-search fw-bold"></i>
+                            </span>
+                            <div>
+                                <div class="fw-semibold small mb-0 text-orange-emphasis">Lütfen seçim yapın</div>
+                                <div class="small text-muted" id="durum-aciklama">Önce sol listeden, sonra sağ listeden bir kart seçmelisiniz.</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-top pt-4">
-                        <a asp-controller="Eslesme"
-                           asp-action="Index"
-                           class="btn btn-outline-secondary px-4 rounded-3 shadow-sm">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            İptal / Listeye Dön
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Eslesme" asp-action="Index"
+                           class="btn btn-outline-secondary rounded-3 px-4 py-2 shadow-sm d-none d-sm-inline-flex">
+                            <i class="bi bi-x-lg me-1"></i>
+                            İptal
                         </a>
                         <button type="submit"
-                                class="btn btn-primary px-5 rounded-3 shadow-sm">
-                            <i class="bi bi-link-45deg me-2"></i>
-                            Eşleşmeyi Kaydet
+                                id="btn-kaydet"
+                                disabled
+                                class="btn rounded-3 px-5 px-sm-6 py-2 py-sm-3 text-white fw-bold shadow-lg disabled-buton"
+                                style="background:linear-gradient(135deg,#94a3b8 0%,#64748b 100%);">
+                            <i class="bi bi-lock-fill me-2"></i>
+                            Önce Seçim Yapın
                         </button>
                     </div>
-
-                </form>
+                </div>
             </div>
-
         </div>
 
-    </div>
+        <!-- 2 ANA KOLON -->
+        <div class="row g-4 mb-4">
+
+            <!-- SOL: KAYIP BAŞVURULARI -->
+            <div class="col-xl-6">
+                <div class="card border-0 rounded-4 overflow-hidden shadow-xl h-100"
+                     style="border:2px solid #fecaca;background:#ffffff;">
+                    <div class="card-header border-0 border-bottom py-4 px-4"
+                         style="background:linear-gradient(90deg,#fef2f2 0%,#ffffff 80%);">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-danger text-white shadow-lg"
+                                      style="width:46px;height:46px;">
+                                    <i class="bi bi-person-arms-up fs-4"></i>
+                                </span>
+                                <div>
+                                    <h4 class="mb-0 fw-bold text-danger-emphasis">① Kayıp Başvuruları</h4>
+                                    <div class="small text-muted">Toplam @basvurular.Count adet · Aktif ve Eşleşmesi Aranıyor</div>
+                                </div>
+                            </div>
+                            <span id="basvuru-secildi-badge"
+                                  class="badge rounded-pill px-3 py-2 d-none fw-bold shadow"
+                                  style="background:#ef4444;">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                SEÇİLDİ
+                            </span>
+                        </div>
+                        <!-- Arama -->
+                        <div class="input-group rounded-3 shadow-sm overflow-hidden" style="border:2px solid #fee2e2;">
+                            <span class="input-group-text bg-white border-end-0 text-danger fs-5"><i class="bi bi-search"></i></span>
+                            <input type="text" id="ara-basvuru"
+                                   class="form-control border-start-0 border-end-0 ps-0 py-2 fw-medium"
+                                   placeholder="Başvuru ara: Ad, Kategori, Marka, Renk, Başvuru No, Ad Soyad..." />
+                            <span class="input-group-text bg-white border-start-0 text-muted btn-sifirla-ara"
+                                  data-target="ara-basvuru"
+                                  style="cursor:pointer;">
+                                <i class="bi bi-x-lg"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2 p-sm-3 bg-white" id="list-basvuru"
+                         style="max-height:720px;overflow-y:auto;overflow-x:hidden;">
+                        @if (!basvurular.Any())
+                        {
+                            <div class="text-center py-7 text-muted">
+                                <i class="bi bi-inbox fs-1 opacity-25 d-block mb-3"></i>
+                                Henüz eşleşebilecek aktif kayıp başvurusu yok.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var b in basvurular)
+                                {
+                                    var secili = Model.KayipBildirimiId == (int)b.Id;
+                                    <label class="kayit-karti kayit-basvuru rounded-4 p-3 position-relative @(secili ? "secili" : "")"
+                                           data-id="@(b.Id)"
+                                           data-adi="@(b.EsyaAdi ?? "")"
+                                           data-kategori="@(b.KategoriAd ?? "")"
+                                           data-marka="@(b.Marka ?? "")"
+                                           data-model="@(b.Model ?? "")"
+                                           data-renk="@(b.Renk ?? "")"
+                                           data-no="@(b.BasvuruNo ?? ("#" + b.Id))"
+                                           data-tarih="@(((DateTime)b.BasvuruTarihi).ToString("dd.MM.yyyy"))"
+                                           data-vatandas="@(b.VatandasAdSoyad ?? "")"
+                                           data-thumb="@(b.Thumbnail ?? "")"
+                                           data-search-key="@($"{b.EsyaAdi} {b.KategoriAd} {b.Marka} {b.Model} {b.Renk} {b.BasvuruNo} {b.VatandasAdSoyad}".ToLowerInvariant())">
+                                        <input type="radio" name="KayipBildirimiId"
+                                               value="@(b.Id)"
+                                               class="d-none"
+                                               @(secili ? "checked" : "") />
+
+                                        <!-- SEÇİLDİ KÖŞE BADGE -->
+                                        <div class="secili-badge position-absolute top-0 end-0 rounded-pill bg-danger text-white px-3 py-1 shadow-lg d-none"
+                                             style="transform:translate(10px,-10px);font-size:0.85rem;">
+                                            <i class="bi bi-check2-circle me-1"></i>
+                                            SEÇİLDİ
+                                        </div>
+
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <!-- Görsel -->
+                                            <div class="kayit-gorsel rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden border border-danger-subtle"
+                                                 style="width:92px;height:92px;background:linear-gradient(135deg,#fee2e2,#fecaca);">
+                                                @if (!string.IsNullOrWhiteSpace((string?)b.Thumbnail))
+                                                {
+                                                    <img src="@(b.Thumbnail)" alt="@(b.EsyaAdi)"
+                                                         class="w-100 h-100 object-fit-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-image fs-1 text-danger opacity-35"></i>
+                                                }
+                                            </div>
+
+                                            <!-- Bilgiler -->
+                                            <div class="flex-grow-1 min-w-0">
+                                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                    <span class="badge rounded-pill px-3 py-1 fw-semibold shadow-sm"
+                                                          style="background:#ef4444;color:#fff;">
+                                                        @(b.BasvuruNo)
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar3 me-1"></i>
+                                                        @(((DateTime)b.BasvuruTarihi).ToString("dd.MM.yyyy"))
+                                                    </small>
+                                                </div>
+                                                <div class="fw-bold text-dark mb-2 text-truncate"
+                                                     style="font-size:1.1rem;">
+                                                    <i class="bi bi-tag me-1 text-danger"></i>
+                                                    @(b.EsyaAdi)
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    <span class="badge rounded-pill bg-danger-subtle text-danger-emphasis fw-medium">
+                                                        <i class="bi bi-folder2 me-1"></i>
+                                                        @(b.KategoriAd)
+                                                    </span>
+                                                    @if (!string.IsNullOrWhiteSpace((string?)b.Marka))
+                                                    {
+                                                        <span class="badge rounded-pill bg-white text-dark border fw-medium">
+                                                            <i class="bi bi-lightning-charge me-1"></i>
+                                                            @(b.Marka) @(b.Model)
+                                                        </span>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace((string?)b.Renk))
+                                                    {
+                                                        <span class="badge rounded-pill bg-white text-dark border fw-medium">
+                                                            <i class="bi bi-droplet-fill me-1"></i>
+                                                            @(b.Renk)
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <small class="text-muted fw-medium d-block text-truncate">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    @(b.VatandasAdSoyad)
+                                                </small>
+                                            </div>
+
+                                            <!-- Secim Göstergesi (BÜYÜK) -->
+                                            <div class="secim-gosterge rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center border-3 border-light-subtle"
+                                                 style="width:54px;height:54px;background:#f8fafc;border-style:solid;">
+                                                <i class="bi bi-arrow-right fs-1" style="color:#94a3b8;"></i>
+                                            </div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAĞ: BULUNAN EŞYALAR -->
+            <div class="col-xl-6">
+                <div class="card border-0 rounded-4 overflow-hidden shadow-xl h-100"
+                     style="border:2px solid #bbf7d0;background:#ffffff;">
+                    <div class="card-header border-0 border-bottom py-4 px-4"
+                         style="background:linear-gradient(90deg,#f0fdf4 0%,#ffffff 80%);">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 bg-success text-white shadow-lg"
+                                      style="width:46px;height:46px;">
+                                    <i class="bi bi-search-heart fs-4"></i>
+                                </span>
+                                <div>
+                                    <h4 class="mb-0 fw-bold text-success-emphasis">② Bulunan Eşyalar</h4>
+                                    <div class="small text-muted">Toplam @esyalar.Count adet · Depoda ve Eşleşmesi Bekliyor</div>
+                                </div>
+                            </div>
+                            <span id="esya-secildi-badge"
+                                  class="badge rounded-pill px-3 py-2 d-none fw-bold shadow"
+                                  style="background:#22c55e;">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                SEÇİLDİ
+                            </span>
+                        </div>
+                        <!-- Arama -->
+                        <div class="input-group rounded-3 shadow-sm overflow-hidden" style="border:2px solid #bbf7d0;">
+                            <span class="input-group-text bg-white border-end-0 text-success fs-5"><i class="bi bi-search"></i></span>
+                            <input type="text" id="ara-esya"
+                                   class="form-control border-start-0 border-end-0 ps-0 py-2 fw-medium"
+                                   placeholder="Eşya ara: Ad, Kategori, Marka, Renk, Raf No, Bulunma Yeri..." />
+                            <span class="input-group-text bg-white border-start-0 text-muted btn-sifirla-ara"
+                                  data-target="ara-esya"
+                                  style="cursor:pointer;">
+                                <i class="bi bi-x-lg"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-2 p-sm-3 bg-white" id="list-esya"
+                         style="max-height:720px;overflow-y:auto;overflow-x:hidden;">
+                        @if (!esyalar.Any())
+                        {
+                            <div class="text-center py-7 text-muted">
+                                <i class="bi bi-inbox fs-1 opacity-25 d-block mb-3"></i>
+                                Henüz depoda bulunan eşya kaydı yok.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var e in esyalar)
+                                {
+                                    var secili = Model.KayipEsyaId == (int)e.Id;
+                                    <label class="kayit-karti kayit-esya rounded-4 p-3 position-relative @(secili ? "secili" : "")"
+                                           data-id="@(e.Id)"
+                                           data-adi="@(e.EsyaAdi ?? "")"
+                                           data-kategori="@(e.KategoriAd ?? "")"
+                                           data-marka="@(e.Marka ?? "")"
+                                           data-model="@(e.Model ?? "")"
+                                           data-renk="@(e.Renk ?? "")"
+                                           data-no="#@(e.Id)"
+                                           data-tarih="@(((DateTime)e.OlusturmaTarihi).ToString("dd.MM.yyyy"))"
+                                           data-vatandas="—"
+                                           data-raf="@(e.RafNo ?? "")"
+                                           data-yer="@(e.BulunmaYeri ?? "")"
+                                           data-thumb="@(e.Thumbnail ?? "")"
+                                           data-search-key="@($"{e.EsyaAdi} {e.KategoriAd} {e.Marka} {e.Model} {e.Renk} {e.BulunmaYeri} {e.RafNo}".ToLowerInvariant())">
+                                        <input type="radio" name="KayipEsyaId"
+                                               value="@(e.Id)"
+                                               class="d-none"
+                                               @(secili ? "checked" : "") />
+
+                                        <!-- SEÇİLDİ KÖŞE BADGE -->
+                                        <div class="secili-badge position-absolute top-0 end-0 rounded-pill bg-success text-white px-3 py-1 shadow-lg d-none"
+                                             style="transform:translate(10px,-10px);font-size:0.85rem;">
+                                            <i class="bi bi-check2-circle me-1"></i>
+                                            SEÇİLDİ
+                                        </div>
+
+                                        <div class="d-flex gap-3 align-items-center">
+                                            <!-- Secim Göstergesi (BÜYÜK) -->
+                                            <div class="secim-gosterge rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center border-3 border-light-subtle"
+                                                 style="width:54px;height:54px;background:#f8fafc;border-style:solid;">
+                                                <i class="bi bi-arrow-left fs-1" style="color:#94a3b8;"></i>
+                                            </div>
+
+                                            <!-- Bilgiler -->
+                                            <div class="flex-grow-1 min-w-0 order-2 order-sm-1">
+                                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                    <span class="badge rounded-pill px-3 py-1 fw-semibold shadow-sm"
+                                                          style="background:#22c55e;color:#fff;">
+                                                        #@(e.Id)
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar-check me-1"></i>
+                                                        @(((DateTime)e.OlusturmaTarihi).ToString("dd.MM.yyyy"))
+                                                    </small>
+                                                    @if (!string.IsNullOrWhiteSpace((string?)e.RafNo))
+                                                    {
+                                                        <span class="badge rounded-pill bg-white text-dark border">
+                                                            <i class="bi bi-box-seam me-1"></i>
+                                                            @(e.RafNo)
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <div class="fw-bold text-dark mb-2 text-truncate order-sm-2"
+                                                     style="font-size:1.1rem;">
+                                                    <i class="bi bi-gift me-1 text-success"></i>
+                                                    @(e.EsyaAdi)
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis fw-medium">
+                                                        <i class="bi bi-folder2 me-1"></i>
+                                                        @(e.KategoriAd)
+                                                    </span>
+                                                    @if (!string.IsNullOrWhiteSpace((string?)e.Marka))
+                                                    {
+                                                        <span class="badge rounded-pill bg-white text-dark border fw-medium">
+                                                            <i class="bi bi-lightning-charge me-1"></i>
+                                                            @(e.Marka) @(e.Model)
+                                                        </span>
+                                                    }
+                                                    @if (!string.IsNullOrWhiteSpace((string?)e.Renk))
+                                                    {
+                                                        <span class="badge rounded-pill bg-white text-dark border fw-medium">
+                                                            <i class="bi bi-droplet-fill me-1"></i>
+                                                            @(e.Renk)
+                                                        </span>
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrWhiteSpace((string?)e.BulunmaYeri))
+                                                {
+                                                    <small class="text-muted fw-medium d-block text-truncate">
+                                                        <i class="bi bi-geo-alt me-1"></i>
+                                                        @(e.BulunmaYeri)
+                                                    </small>
+                                                }
+                                            </div>
+
+                                            <!-- Görsel -->
+                                            <div class="kayit-gorsel rounded-3 d-flex align-items-center justify-content-center flex-shrink-0 overflow-hidden border border-success-subtle order-1 order-sm-3"
+                                                 style="width:92px;height:92px;background:linear-gradient(135deg,#dcfce7,#bbf7d0);">
+                                                @if (!string.IsNullOrWhiteSpace((string?)e.Thumbnail))
+                                                {
+                                                    <img src="@(e.Thumbnail)" alt="@(e.EsyaAdi)"
+                                                         class="w-100 h-100 object-fit-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-image fs-1 text-success opacity-35"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÖN İZLEME PANELİ (2 seçim olunca görünür, tek sayfada son adım) -->
+        <div id="onizleme" style="display:none;" class="mb-4">
+            <div class="card border-0 rounded-4 shadow-xl overflow-hidden"
+                 style="border:3px solid #8b5cf6;background:#ffffff;">
+                <!-- GRADIENT BAŞLIK -->
+                <div class="text-center text-white py-4 px-4 position-relative overflow-hidden"
+                     style="background:linear-gradient(135deg,#6366f1 0%,#a855f7 50%,#ec4899 100%);">
+                    <h3 class="fw-bold mb-1 d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check2-circle fs-1"></i>
+                        ③ Son Kontrol & Kaydet
+                    </h3>
+                    <p class="mb-0 opacity-90 small">
+                        Aşağıdaki ikisi arasında eşleşme tanımlamak üzeresiniz. Emin misiniz?
+                    </p>
+                </div>
+
+                <div class="card-body p-4 p-sm-5">
+                    <!-- Büyük Seçim Kutular -->
+                    <div class="row g-4 align-items-stretch mb-5">
+                        <!-- Sol: Başvuru -->
+                        <div class="col-md-5">
+                            <div class="h-100 rounded-4 p-4 p-sm-5 border-3 text-dark position-relative overflow-hidden"
+                                 style="border-style:solid;border-color:#ef4444;background:linear-gradient(135deg,#fff 0%,#fef2f2 100%);">
+                                <!-- SEÇİLDİ BANDI -->
+                                <div class="position-absolute top-0 start-0 bg-danger text-white fw-bold px-3 py-1 rounded-br-4 shadow">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    KAYIP BAŞVURUSU · SEÇİLDİ
+                                </div>
+                                <div class="mt-5">
+                                    <div class="d-flex align-items-center gap-4 mb-4">
+                                        <div id="p-basvuru-resim"
+                                             class="rounded-4 d-flex align-items-center justify-content-center border-3 border-danger-subtle flex-shrink-0"
+                                             style="width:128px;height:128px;background:#fff;overflow:hidden;border-style:solid;">
+                                            <i class="bi bi-person-arms-up text-danger fs-1 opacity-40"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="small text-danger fw-bold mb-2 text-uppercase">Kayıp Başvurusu</div>
+                                            <div class="badge rounded-pill px-3 py-1 fw-semibold shadow-sm mb-2" style="background:#ef4444;color:#fff;" id="p-basvuru-no">#-</div>
+                                            <div class="fw-bold text-dark mb-1" id="p-basvuru-adi" style="font-size:1.25rem;">—</div>
+                                            <div class="small text-muted"><i class="bi bi-calendar3 me-1"></i><span id="p-basvuru-tarih">—</span></div>
+                                        </div>
+                                    </div>
+                                    <hr class="my-3 border-danger-subtle" />
+                                    <div class="row g-2 small">
+                                        <div class="col-6"><strong class="text-danger">Kategori:</strong> <span id="p-basvuru-kategori">—</span></div>
+                                        <div class="col-6"><strong class="text-danger">Renk:</strong> <span id="p-basvuru-renk">—</span></div>
+                                        <div class="col-12"><strong class="text-danger">Marka/Model:</strong> <span id="p-basvuru-marka">—</span></div>
+                                        <div class="col-12"><strong class="text-danger">Başvuran:</strong> <span id="p-basvuru-vatandas">—</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orta OK + SKOR -->
+                        <div class="col-md-2 d-flex flex-column align-items-center justify-content-center gap-3 py-3 py-md-0">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-arrow-right-circle-fill fs-1" style="color:#ef4444;"></i>
+                                <i class="bi bi-link-45deg fs-1 text-primary"></i>
+                                <i class="bi bi-arrow-left-circle-fill fs-1" style="color:#22c55e;"></i>
+                            </div>
+
+                            <!-- Büyük Skor Çemberi -->
+                            <div class="mt-2 w-100 text-center p-4 rounded-4 border border-secondary-subtle shadow-sm"
+                                 style="background:#fafafa;">
+                                <div class="small fw-semibold text-muted mb-2">Eşleşme Skoru</div>
+                                <div class="position-relative d-inline-flex align-items-center justify-content-center">
+                                    <div id="p-skor-daire"
+                                         class="skor-daire position-relative"
+                                         style="background:conic-gradient(#94a3b8 0deg,#94a3b8 0deg,#e2e8f0 0deg,#e2e8f0 360deg);"></div>
+                                    <div id="p-skor-yazi"
+                                         class="position-absolute fw-bold text-dark"
+                                         style="font-size:2.6rem;line-height:1;">
+                                        %?
+                                    </div>
+                                </div>
+                                <div id="p-skor-badge" class="mt-3">
+                                    <span class="skor-badge skor-orta"><i class="bi bi-dash-circle-fill me-1"></i>Hesaplanıyor</span>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="form-label small fw-semibold text-muted mb-1 d-none">Skor</label>
+                                    <input asp-for="Skor" type="number" min="0" max="100" step="1"
+                                           id="skor-input"
+                                           class="form-control form-control-lg text-center fw-bold rounded-3 shadow-sm border-2 border-secondary-subtle"
+                                           style="font-size:1.5rem;" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sağ: Eşya -->
+                        <div class="col-md-5">
+                            <div class="h-100 rounded-4 p-4 p-sm-5 border-3 text-dark position-relative overflow-hidden"
+                                 style="border-style:solid;border-color:#22c55e;background:linear-gradient(135deg,#fff 0%,#f0fdf4 100%);">
+                                <!-- SEÇİLDİ BANDI -->
+                                <div class="position-absolute top-0 start-0 bg-success text-white fw-bold px-3 py-1 rounded-br-4 shadow">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    BULUNAN EŞYA · SEÇİLDİ
+                                </div>
+                                <div class="mt-5">
+                                    <div class="d-flex align-items-center gap-4 mb-4 flex-row-reverse text-end">
+                                        <div id="p-esya-resim"
+                                             class="rounded-4 d-flex align-items-center justify-content-center border-3 border-success-subtle flex-shrink-0"
+                                             style="width:128px;height:128px;background:#fff;overflow:hidden;border-style:solid;">
+                                            <i class="bi bi-search-heart text-success fs-1 opacity-40"></i>
+                                        </div>
+                                        <div class="min-w-0 text-start">
+                                            <div class="small text-success fw-bold mb-2 text-uppercase">Bulunan Eşya</div>
+                                            <div class="badge rounded-pill px-3 py-1 fw-semibold shadow-sm mb-2" style="background:#22c55e;color:#fff;" id="p-esya-no">#-</div>
+                                            <div class="fw-bold text-dark mb-1" id="p-esya-adi" style="font-size:1.25rem;">—</div>
+                                            <div class="small text-muted"><i class="bi bi-calendar-check me-1"></i><span id="p-esya-tarih">—</span></div>
+                                        </div>
+                                    </div>
+                                    <hr class="my-3 border-success-subtle" />
+                                    <div class="row g-2 small">
+                                        <div class="col-6"><strong class="text-success">Kategori:</strong> <span id="p-esya-kategori">—</span></div>
+                                        <div class="col-6"><strong class="text-success">Renk:</strong> <span id="p-esya-renk">—</span></div>
+                                        <div class="col-12"><strong class="text-success">Marka/Model:</strong> <span id="p-esya-marka">—</span></div>
+                                        <div class="col-12"><strong class="text-success">Bulunma Yeri/Raf:</strong> <span id="p-esya-raf">—</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NOT + SON KAYDETME -->
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <label asp-for="EslesmeDetay" class="form-label fw-bold text-uppercase text-muted mb-2 small">
+                                <i class="bi bi-pencil-square me-1"></i>
+                                Eşleşme Notu (Zorunlu Değil, önerilir)
+                            </label>
+                            <textarea asp-for="EslesmeDetay"
+                                      rows="4"
+                                      class="form-control rounded-4 border-2 border-secondary-subtle shadow-sm p-3"
+                                      style="font-size:1rem;"
+                                      placeholder="Neden eşleştirme yaptığınızı kısaca yazabilirsiniz. (Örn: Sahip geldi ve tanımladı, Seri No aynı vs.)"></textarea>
+                            <span asp-validation-for="EslesmeDetay" class="text-danger small d-block mt-1"></span>
+                        </div>
+                        <div class="col-lg-5 d-flex flex-column justify-content-between gap-3">
+                            <div>
+                                <div class="small text-muted fw-bold text-uppercase mb-2">Hızlı Not Ekle</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button"
+                                            class="btn btn-outline-primary rounded-pill px-3 py-2 fw-medium hizli-not shadow-sm"
+                                            data-not="Fiziksel özellikler %100 aynı nesne. Personel kontrolünde eşleşme yapıldı.">
+                                        <i class="bi bi-check2-square me-1"></i>Aynı Nesne
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-outline-info rounded-pill px-3 py-2 fw-medium hizli-not shadow-sm"
+                                            data-not="Kayıp sahibi beldeye gelerek eşyanın kendisine ait olduğunu kimliği ile tasdik etti.">
+                                        <i class="bi bi-person-check me-1"></i>Sahip Geldi
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-medium hizli-not shadow-sm"
+                                            data-not="Marka, model, renk ve ayırt edici özellikler tamamen uyuşuyor.">
+                                        <i class="bi bi-stars me-1"></i>Özellikler Eşleşiyor
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a asp-controller="Eslesme" asp-action="Index"
+                                   class="btn btn-outline-secondary rounded-4 px-4 py-3 flex-grow-1 fw-semibold shadow-sm">
+                                    <i class="bi bi-x-lg me-2"></i>İptal
+                                </a>
+                                <button type="submit"
+                                        id="btn-kaydet-son"
+                                        class="btn rounded-4 px-5 px-sm-6 py-3 flex-grow-1 text-white fw-bold shadow-lg fs-6"
+                                        style="background:linear-gradient(135deg,#16a34a 0%,#22c55e 45%,#6366f1 100%);transform:translateY(0);transition:transform .12s ease, filter .12s ease;"
+                                        onmouseover="this.style.transform='translateY(-2px)';this.style.filter='brightness(1.05)'"
+                                        onmouseout="this.style.transform='translateY(0)';this.style.filter=''">
+                                    <i class="bi bi-check2-all fs-5 me-2"></i>
+                                    EŞLEŞMEYİ ONAYLA & KAYDET
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </form>
 </div>
+
+<style>
+    .kayit-karti{
+        cursor:pointer;
+        transition:all .18s ease;
+        border:2px solid transparent;
+        background:#ffffff;
+        position:relative;
+        overflow:visible;
+    }
+    .kayit-karti:hover{
+        transform:translateY(-2px);
+        box-shadow:0 14px 30px rgba(15,23,42,0.10);
+        z-index:3;
+    }
+    .kayit-basvuru:hover{ border-color:#fca5a5; }
+    .kayit-esya:hover{ border-color:#86efac; }
+
+    /* ============ SEÇİLİ DURUM (GERÇEKTEN GÖRÜNÜR!) ============ */
+    .kayit-karti.secili{
+        border-width:3px !important;
+        box-shadow:0 22px 45px rgba(15,23,42,0.16) !important;
+        transform:translateY(-2px) scale(1.005) !important;
+        z-index:10 !important;
+    }
+    .kayit-basvuru.secili{
+        border-color:#ef4444 !important;
+        background:linear-gradient(135deg,#ffffff 0%,#fef2f2 60%,#fee2e2 100%);
+        animation:pulse-danger 1.5s ease 2;
+    }
+    .kayit-esya.secili{
+        border-color:#22c55e !important;
+        background:linear-gradient(135deg,#ffffff 0%,#f0fdf4 60%,#dcfce7 100%);
+        animation:pulse-success 1.5s ease 2;
+    }
+    @@keyframes pulse-danger{
+        0%,100%{ box-shadow:0 22px 45px rgba(15,23,42,.16); }
+        50%{ box-shadow:0 22px 45px rgba(15,23,42,.16), 0 0 0 12px rgba(239,68,68,0.18); }
+    }
+    @@keyframes pulse-success{
+        0%,100%{ box-shadow:0 22px 45px rgba(15,23,42,.16); }
+        50%{ box-shadow:0 22px 45px rgba(15,23,42,.16), 0 0 0 12px rgba(34,197,94,0.18); }
+    }
+    /* Seçili kartların içindeki SEÇİLDİ badge: görünür */
+    .kayit-karti.secili .secili-badge{ display:inline-flex !important; align-items:center; }
+    /* Seçili kartın sağ/sol SHOW CHECK */
+    .kayit-basvuru.secili .secim-gosterge{
+        background:#ef4444 !important;
+        border-color:#ef4444 !important;
+        box-shadow:0 10px 24px rgba(239,68,68,0.45) !important;
+    }
+    .kayit-esya.secili .secim-gosterge{
+        background:#22c55e !important;
+        border-color:#22c55e !important;
+        box-shadow:0 10px 24px rgba(34,197,94,0.45) !important;
+    }
+    .kayit-basvuru.secili .secim-gosterge i, .kayit-esya.secili .secim-gosterge i{
+        color:#ffffff !important;
+    }
+    .kayit-basvuru.secili .secim-gosterge i::before{ content:"\f26e"; }
+    .kayit-esya.secili .secim-gosterge i::before{ content:"\f26e"; }
+
+    /* Adım göstergesi */
+    .adim .adim-ikon{ transition:all .22s ease; }
+    .adim.adim-aktif .adim-baslik{ font-weight:700 !important; }
+    .adim.adim-tamamlandi .adim-ikon{
+        background:linear-gradient(135deg,#16a34a,#22c55e) !important;
+        animation:pulse-success 2s ease infinite;
+    }
+    .adim.adim-tamamlandi .adim-ikon::before{
+        content:"";
+    }
+    .adim.adim-tamamlandi .adim-baslik{ color:#065f46 !important; }
+
+    /* Action bar Düğme geçişleri */
+    .disabled-buton{
+        opacity:0.92;
+    }
+
+    /* Scroll list */
+    #list-basvuru::-webkit-scrollbar, #list-esya::-webkit-scrollbar{ width:10px; }
+    #list-basvuru::-webkit-scrollbar-track, #list-esya::-webkit-scrollbar-track{ background:#f1f5f9; border-radius:10px;}
+    #list-basvuru::-webkit-scrollbar-thumb{
+        background:linear-gradient(180deg,#fca5a5,#ef4444);
+        border-radius:10px;
+    }
+    #list-esya::-webkit-scrollbar-thumb{
+        background:linear-gradient(180deg,#86efac,#22c55e);
+        border-radius:10px;
+    }
+
+    .py-7{ padding-top:4rem; padding-bottom:4rem; }
+    .rounded-br-4{ border-bottom-right-radius:1rem; }
+    .text-orange-emphasis{ color:#9a3412; }
+    .text-danger-emphasis{ color:#991b1b; }
+    .text-success-emphasis{ color:#166534; }
+    .text-primary-emphasis{ color:#1e40af; }
+    .adim-alt{ display:block; }
+
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function(){
+            // ---- DOM ----
+            const btnKaydet = document.getElementById('btn-kaydet');
+            const btnSon    = document.getElementById('btn-kaydet-son');
+            const durumBilgi = document.getElementById('durum-bilgi');
+            const durumAciklama = document.getElementById('durum-aciklama');
+            const onizlemeDiv = document.getElementById('onizleme');
+            const basvuruSecildiBadge = document.getElementById('basvuru-secildi-badge');
+            const esyaSecildiBadge = document.getElementById('esya-secildi-badge');
+            const skorInput = document.getElementById('skor-input');
+            const formEl = document.getElementById('form-yeni-eslesme');
+            const adim1 = document.getElementById('adim-1');
+            const adim2 = document.getElementById('adim-2');
+            const adim3 = document.getElementById('adim-3');
+
+            // --- Buton Yönetimi ---
+            function butonAktif(aktif){
+                // Üstteki BÜYÜK buton
+                if(btnKaydet){
+                    if(aktif){
+                        btnKaydet.disabled = false;
+                        btnKaydet.classList.remove('disabled-buton');
+                        btnKaydet.style.background = 'linear-gradient(135deg,#16a34a 0%,#22c55e 50%,#6366f1 100%)';
+                        btnKaydet.innerHTML = '<i class="bi bi-check2-all fs-5 me-2"></i>ONAYLA & KAYDET';
+                    } else {
+                        btnKaydet.disabled = true;
+                        btnKaydet.classList.add('disabled-buton');
+                        btnKaydet.style.background = 'linear-gradient(135deg,#94a3b8 0%,#64748b 100%)';
+                        btnKaydet.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Önce 2 Seçim Yapın';
+                    }
+                }
+            }
+            function durumGoster(basvuruVar, esyaVar){
+                if(!basvuruVar && !esyaVar){
+                    durumBilgi.style.background = '#fff7ed';
+                    durumBilgi.style.borderColor = '#fed7aa';
+                    durumBilgi.querySelector('.rounded-circle').style.background = '#f97316';
+                    durumBilgi.querySelector('.rounded-circle').innerHTML = '<i class="bi bi-search fw-bold"></i>';
+                    durumBilgi.querySelector('.fw-semibold').textContent = 'Lütfen seçim yapın';
+                    durumBilgi.querySelector('.fw-semibold').className = 'fw-semibold small mb-0 text-orange-emphasis';
+                    durumAciklama.textContent = 'Önce sol listeden, sonra sağ listeden bir kart seçmelisiniz.';
+                    basvuruSecildiBadge.classList.add('d-none');
+                    esyaSecildiBadge.classList.add('d-none');
+                    onizlemeDiv.style.display = 'none';
+                    // Adimlar
+                    adimSet(1, 0);
+                } else if(basvuruVar && !esyaVar){
+                    durumBilgi.style.background = '#fef2f2';
+                    durumBilgi.style.borderColor = '#fecaca';
+                    durumBilgi.querySelector('.rounded-circle').style.background = '#ef4444';
+                    durumBilgi.querySelector('.rounded-circle').innerHTML = '<i class="bi bi-check2 fw-bold"></i>';
+                    durumBilgi.querySelector('.fw-semibold').textContent = '✅ Başvuru Seçildi · Şimdi Eşya Seçin';
+                    durumBilgi.querySelector('.fw-semibold').className = 'fw-semibold small mb-0 text-danger-emphasis';
+                    durumAciklama.textContent = 'Harika! Şimdi sağ listeden UYUŞAN bulunan eşyayı seçin.';
+                    basvuruSecildiBadge.classList.remove('d-none');
+                    esyaSecildiBadge.classList.add('d-none');
+                    onizlemeDiv.style.display = 'none';
+                    adimSet(2, 1);
+                } else if(!basvuruVar && esyaVar){
+                    durumBilgi.style.background = '#f0fdf4';
+                    durumBilgi.style.borderColor = '#bbf7d0';
+                    durumBilgi.querySelector('.rounded-circle').style.background = '#22c55e';
+                    durumBilgi.querySelector('.rounded-circle').innerHTML = '<i class="bi bi-check2 fw-bold"></i>';
+                    durumBilgi.querySelector('.fw-semibold').textContent = '✅ Eşya Seçildi · Şimdi Başvuru Seçin';
+                    durumBilgi.querySelector('.fw-semibold').className = 'fw-semibold small mb-0 text-success-emphasis';
+                    durumAciklama.textContent = 'Harika! Şimdi sol listeden bu eşyaya uyan başvuruyu seçin.';
+                    basvuruSecildiBadge.classList.add('d-none');
+                    esyaSecildiBadge.classList.remove('d-none');
+                    onizlemeDiv.style.display = 'none';
+                    adimSet(2, 2);
+                } else {
+                    // İKİSİ DE SEÇİLDİ!
+                    durumBilgi.style.background = '#eff6ff';
+                    durumBilgi.style.borderColor = '#bfdbfe';
+                    durumBilgi.querySelector('.rounded-circle').style.background = 'linear-gradient(135deg,#6366f1,#ec4899)';
+                    durumBilgi.querySelector('.rounded-circle').innerHTML = '<i class="bi bi-link-45deg fw-bold"></i>';
+                    durumBilgi.querySelector('.fw-semibold').textContent = '🎉 İKİSİ DE SEÇİLDİ! Onaylayın';
+                    durumBilgi.querySelector('.fw-semibold').className = 'fw-semibold small mb-0 text-primary-emphasis';
+                    durumAciklama.textContent = 'Aşağıya kaydırıp Skor + Not girin, sonra "ONAYLA & KAYDET" butonuna basın.';
+                    basvuruSecildiBadge.classList.remove('d-none');
+                    esyaSecildiBadge.classList.remove('d-none');
+                    onizlemeDiv.style.display = '';
+                    adimSet(3, 3);
+                    // Önizlemeyi doldur:
+                    onizlemeDoldur();
+                }
+            }
+
+            function adimSet(aktif, tamamlandiSayi){
+                [adim1, adim2, adim3].forEach((a, i) => {
+                    a.classList.remove('adim-aktif', 'adim-tamamlandi');
+                    const no = a.querySelector('.adim-ikon');
+                    // Tamamlandı mı?
+                    if(i < tamamlandiSayi){
+                        a.classList.add('adim-tamamlandi');
+                        no.innerHTML = '<i class="bi bi-check2 fs-3"></i>';
+                    } else {
+                        no.innerHTML = (i+1).toString();
+                    }
+                });
+                const aktifEl = [adim1, adim2, adim3][aktif-1];
+                if(aktifEl) aktifEl.classList.add('adim-aktif');
+            }
+
+            // --- KARTLARA TIKLAMA ---
+            document.querySelectorAll('.kayit-karti').forEach(kart => {
+                const radio = kart.querySelector('input[type="radio"]');
+                // Kart üzerinde herhangi bir yere tıklanınca radio checked
+                kart.addEventListener('click', function(e){
+                    if(radio && !radio.checked){
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change', {bubbles:true}));
+                    }
+                });
+                if(radio){
+                    radio.addEventListener('change', function(){
+                        if(this.checked){
+                            // Tüm kardların secili sinifini kaldır (aynı tip)
+                            if(kart.classList.contains('kayit-basvuru')){
+                                document.querySelectorAll('.kayit-basvuru').forEach(x => x.classList.remove('secili'));
+                            } else {
+                                document.querySelectorAll('.kayit-esya').forEach(x => x.classList.remove('secili'));
+                            }
+                            kart.classList.add('secili');
+                        }
+                        // Her durumda genel güncelle
+                        guncelleGenel();
+                    });
+                }
+            });
+
+            // İlk yüklemede: sayfaya query string ile geldiyse secili var (Model)
+            function guncelleIlkSeciliDurum(){
+                document.querySelectorAll('.kayit-karti input[type="radio"]:checked').forEach(r => r.dispatchEvent(new Event('change')));
+            }
+
+            function guncelleGenel(){
+                const bv = document.querySelector('input[name="KayipBildirimiId"]:checked');
+                const es = document.querySelector('input[name="KayipEsyaId"]:checked');
+                const bVar = !!bv;
+                const eVar = !!es;
+                butonAktif(bVar && eVar);
+                durumGoster(bVar, eVar);
+                // Scroll: 2 seçim olunca önizleme kartına smooth kaydır
+                if(bVar && eVar){
+                    setTimeout(()=>{
+                        onizlemeDiv.scrollIntoView({behavior:'smooth', block:'start'});
+                    }, 220);
+                }
+            }
+
+            // --- Arama kutuları ---
+            document.getElementById('ara-basvuru').addEventListener('input', function(e){
+                const q = (e.target.value || '').toLowerCase().trim();
+                document.querySelectorAll('.kayit-basvuru').forEach(k => {
+                    const key = k.getAttribute('data-search-key') || '';
+                    k.style.display = (!q || key.includes(q)) ? '' : 'none';
+                });
+            });
+            document.getElementById('ara-esya').addEventListener('input', function(e){
+                const q = (e.target.value || '').toLowerCase().trim();
+                document.querySelectorAll('.kayit-esya').forEach(k => {
+                    const key = k.getAttribute('data-search-key') || '';
+                    k.style.display = (!q || key.includes(q)) ? '' : 'none';
+                });
+            });
+            document.querySelectorAll('.btn-sifirla-ara').forEach(b => {
+                b.addEventListener('click', function(){
+                    const id = this.getAttribute('data-target');
+                    const el = document.getElementById(id);
+                    if(el){ el.value = ''; el.dispatchEvent(new Event('input')); }
+                });
+            });
+
+            // --- SKOR HESAP ---
+            function skorBilgi(s){
+                if(s >= 90) return {sinif:'skor-mukemmel', ikon:'bi bi-stars', etiket:'Mükemmel', renk:'#2563eb', renk2:'#3b82f6'};
+                if(s >= 75) return {sinif:'skor-yuksek', ikon:'bi bi-check-circle-fill', etiket:'Yüksek', renk:'#16a34a', renk2:'#22c55e'};
+                if(s >= 55) return {sinif:'skor-orta', ikon:'bi bi-exclamation-circle-fill', etiket:'Orta', renk:'#ca8a04', renk2:'#eab308'};
+                if(s >= 35) return {sinif:'skor-kismi', ikon:'bi bi-dash-circle-fill', etiket:'Kısmi', renk:'#ea580c', renk2:'#f97316'};
+                return {sinif:'skor-dusuk', ikon:'bi bi-x-circle-fill', etiket:'Düşük', renk:'#dc2626', renk2:'#ef4444'};
+            }
+            function skorRenk(s, r1, r2){
+                const deg = Math.min(360, Math.max(0, Math.round(s * 3.6)));
+                document.getElementById('p-skor-daire').style.background = `conic-gradient(${r1} 0deg,${r2} ${deg}deg,#e2e8f0 ${deg}deg,#e2e8f0 360deg)`;
+                document.getElementById('p-skor-yazi').textContent = '%' + s;
+            }
+            function benzerlik(a,b){
+                a=(a||'').toString().toLowerCase().trim();
+                b=(b||'').toString().toLowerCase().trim();
+                if(!a && !b) return 1;
+                if(!a || !b) return 0;
+                if(a===b) return 1;
+                if(a.includes(b)||b.includes(a)) return 0.9;
+                const aK=new Set(a.split(/\s+/).filter(x=>x.length>=2));
+                const bK=new Set(b.split(/\s+/).filter(x=>x.length>=2));
+                let kes=0; aK.forEach(k=>{ if(bK.has(k)) kes++; });
+                const uni = new Set([...aK,...bK]).size || 1;
+                return (kes/uni)*0.92+0.05;
+            }
+            function hesaplaSkor(bData, eData){
+                let s = 0;
+                s += benzerlik(bData.adi, eData.adi) * 40;
+                const katBenzer = benzerlik(bData.kategori, eData.kategori);
+                s += (katBenzer >= 0.9 ? 35 : (katBenzer >= 0.35 ? 12 : (bData.kategori && eData.kategori ? -12 : 0)));
+                if(bData.marka || eData.marka){
+                    const mm = (bData.marka||'') + ' ' + (bData.model||'');
+                    const em = (eData.marka||'') + ' ' + (eData.model||'');
+                    s += Math.max(benzerlik(bData.marka, eData.marka), benzerlik(mm, em)) * 20;
+                }
+                if(bData.renk || eData.renk){
+                    s += benzerlik(bData.renk, eData.renk) * 10;
+                }
+                if(s<0)s=0; if(s>100)s=100;
+                return Math.round(s);
+            }
+
+            // --- ON İZLEME DOLDURMA ---
+            function veriAl(kart){
+                return {
+                    id: kart.getAttribute('data-id'),
+                    adi: kart.getAttribute('data-adi') || '',
+                    kategori: kart.getAttribute('data-kategori') || '',
+                    marka: kart.getAttribute('data-marka') || '',
+                    model: kart.getAttribute('data-model') || '',
+                    renk: kart.getAttribute('data-renk') || '',
+                    no: kart.getAttribute('data-no') || '',
+                    tarih: kart.getAttribute('data-tarih') || '',
+                    vatandas: kart.getAttribute('data-vatandas') || '',
+                    thumb: kart.getAttribute('data-thumb') || '',
+                    raf: kart.getAttribute('data-raf') || '',
+                    yer: kart.getAttribute('data-yer') || '',
+                };
+            }
+            function onizlemeDoldur(){
+                const seciliBasvuru = document.querySelector('.kayit-basvuru.secili');
+                const seciliEsya    = document.querySelector('.kayit-esya.secili');
+                if(!seciliBasvuru || !seciliEsya) return;
+                const b = veriAl(seciliBasvuru);
+                const e = veriAl(seciliEsya);
+
+                // --- Başvuru ---
+                const pbresim = document.getElementById('p-basvuru-resim');
+                if(b.thumb) pbresim.innerHTML = `<img src="${b.thumb}" class="w-100 h-100 object-fit-cover">`;
+                else pbresim.innerHTML = '<i class="bi bi-person-arms-up text-danger fs-1 opacity-40"></i>';
+                document.getElementById('p-basvuru-no').textContent = b.no;
+                document.getElementById('p-basvuru-adi').textContent = b.adi || '—';
+                document.getElementById('p-basvuru-tarih').textContent = b.tarih || '—';
+                document.getElementById('p-basvuru-kategori').textContent = b.kategori || '—';
+                document.getElementById('p-basvuru-renk').textContent = b.renk || '—';
+                document.getElementById('p-basvuru-marka').textContent = ((b.marka || '') + ' ' + (b.model || '')).trim() || '—';
+                document.getElementById('p-basvuru-vatandas').textContent = b.vatandas || '—';
+
+                // --- Eşya ---
+                const peresim = document.getElementById('p-esya-resim');
+                if(e.thumb) peresim.innerHTML = `<img src="${e.thumb}" class="w-100 h-100 object-fit-cover">`;
+                else peresim.innerHTML = '<i class="bi bi-search-heart text-success fs-1 opacity-40"></i>';
+                document.getElementById('p-esya-no').textContent = e.no;
+                document.getElementById('p-esya-adi').textContent = e.adi || '—';
+                document.getElementById('p-esya-tarih').textContent = e.tarih || '—';
+                document.getElementById('p-esya-kategori').textContent = e.kategori || '—';
+                document.getElementById('p-esya-renk').textContent = e.renk || '—';
+                document.getElementById('p-esya-marka').textContent = ((e.marka || '') + ' ' + (e.model || '')).trim() || '—';
+                let rafStr = e.raf ? ('Raf: ' + e.raf) : '';
+                if(e.yer) rafStr = (rafStr ? rafStr + ' · ' : '') + e.yer;
+                document.getElementById('p-esya-raf').textContent = rafStr || '—';
+
+                // --- Skor ---
+                const s = hesaplaSkor(b, e);
+                skorInput.value = s;
+                const sb = skorBilgi(s);
+                document.getElementById('p-skor-badge').innerHTML =
+                    `<span class="skor-badge ${sb.sinif}"><i class="${sb.ikon} me-1"></i>${sb.etiket} · %${s}</span>`;
+                skorRenk(s, sb.renk, sb.renk2);
+            }
+
+            // Skor input değişince çember ve badge güncelle
+            skorInput.addEventListener('input', function(){
+                let v = parseInt(this.value, 10);
+                if(isNaN(v) || v<0 || v>100){
+                    document.getElementById('p-skor-badge').innerHTML =
+                        `<span class="skor-badge skor-dusuk"><i class="bi bi-exclamation-triangle-fill me-1"></i>0-100 arası</span>`;
+                    skorRenk(0, '#dc2626','#ef4444');
+                    return;
+                }
+                const sb = skorBilgi(v);
+                document.getElementById('p-skor-badge').innerHTML =
+                    `<span class="skor-badge ${sb.sinif}"><i class="${sb.ikon} me-1"></i>${sb.etiket} · %${v}</span>`;
+                skorRenk(v, sb.renk, sb.renk2);
+            });
+
+            // Hızlı notlar
+            document.querySelectorAll('.hizli-not').forEach(b => {
+                b.addEventListener('click', function(){
+                    const ta = document.getElementById('EslesmeDetay');
+                    const ekle = this.getAttribute('data-not') || '';
+                    ta.value = (ta.value ? (ta.value.trimEnd().replace(/[.!?]*$/,'') + ' · ') : '') + ekle;
+                    ta.focus();
+                });
+            });
+
+            // --- Form Gönderim Kontrolü ---
+            function gecerliKaydetKontrol(){
+                const b = document.querySelector('input[name="KayipBildirimiId"]:checked');
+                const e = document.querySelector('input[name="KayipEsyaId"]:checked');
+                if(!b || !e){
+                    let msg = '';
+                    if(!b && !e) msg = 'Önce (1) Soldan bir KAYIP BAŞVURUSU, sonra (2) Sağdan bir BULUNAN EŞYA seçmelisiniz!';
+                    else if(!b) msg = 'Lütfen SOL listeden bir KAYIP BAŞVURUSU seçin! (Kırmızı kartlar)';
+                    else msg = 'Lütfen SAĞ listeden bir BULUNAN EŞYA seçin! (Yeşil kartlar)';
+                    alert('⚠️ EŞLEŞME KAYIT EDİLEMEDİ\n\n' + msg);
+                    return false;
+                }
+                const sv = parseInt(skorInput.value,10);
+                if(isNaN(sv) || sv<0 || sv>100){
+                    alert('⚠️ SKOR HATASI\n\nSkor 0 ile 100 arasında bir sayı olmalıdır. Şu an: "' + skorInput.value + '"');
+                    skorInput.focus();
+                    return false;
+                }
+                return true;
+            }
+            [btnKaydet, btnSon].forEach(b => {
+                if(!b) return;
+                b.addEventListener('click', function(e){
+                    if(!gecerliKaydetKontrol()){
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+            });
+            if(formEl){
+                formEl.addEventListener('submit', function(e){
+                    if(!gecerliKaydetKontrol()){ e.preventDefault(); return false; }
+                    // Submitten sonra çift tık önle:
+                    [btnKaydet, btnSon].forEach(x => { if(x){ x.disabled = true; x.style.opacity='0.8'; x.innerHTML='<i class="bi bi-arrow-repeat me-2"></i>KAYDEDİLİYOR...'; } });
+                    return true;
+                });
+            }
+
+            // İlk Yükleme: secili (query string geldiyse) güncelle
+            guncelleIlkSeciliDurum();
+            guncelleGenel();
+        })();
+    </script>
 }

@@ -165,11 +165,23 @@
                     }
                 }
 
-                <div class="d-flex justify-content-end gap-2 mt-4">
+                <div class="d-flex justify-content-between flex-wrap align-items-center gap-2 mt-4">
+                    <div class="d-flex gap-2 flex-wrap">
+                        @if (Model.AktifMi && (Model.Durum == "Depoda" || Model.Durum == "Yeni Kayıt" || string.IsNullOrWhiteSpace(Model.Durum)))
+                        {
+                            <a asp-controller="Eslesme"
+                               asp-action="YeniEslesme"
+                               asp-route-esyaId="@Model.Id"
+                               class="btn btn-outline-primary rounded-3 px-4 py-2 shadow-sm">
+                                <i class="bi bi-link-45deg me-2"></i>
+                                <strong>Bu Eşyayı Eşleştir</strong>
+                            </a>
+                        }
+                    </div>
 
                     <a asp-controller="KayipEsya"
                        asp-action="Index"
-                       class="btn btn-secondary">
+                       class="btn btn-secondary rounded-3 px-4 py-2">
                         <i class="bi bi-arrow-left me-2"></i>
                         Listeye Dön
                     </a>

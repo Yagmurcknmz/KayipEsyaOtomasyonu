@@ -1,0 +1,319 @@
+@model KayipEsyaOtomasyonu.Models.Bildirim
+@{
+    ViewData["Title"] = "Bildirim Detayı";
+    Layout = "~/Views/Shared/_VatandasLayout.cshtml";
+
+    var (turIkon, turBaslik, turGradient, turBadgeSinif, turBadgeYazi) = Model.Turu switch
+    {
+        BildirimTuru.EslesmeBulundu => (
+            Ikon: "bi-magic",
+            Baslik: "Eşleşme Bulundu!",
+            Gradient: "linear-gradient(135deg,#059669 0%,#047857 55%,#065f46 100%)",
+            BadgeSinif: "bg-success-subtle text-success-emphasis border-success",
+            BadgeYazi: "Eşleşme Bulundu"
+        ),
+        BildirimTuru.TeslimOnayi => (
+            Ikon: "bi-box2-heart-fill",
+            Baslik: "Eşyanız Teslim Edildi",
+            Gradient: "linear-gradient(135deg,#2563eb 0%,#4f46e5 45%,#7c3aed 100%)",
+            BadgeSinif: "bg-primary-subtle text-primary-emphasis border-primary",
+            BadgeYazi: "Teslim Onayı"
+        ),
+        BildirimTuru.BasvuruDurumu => (
+            Ikon: "bi-info-circle-fill",
+            Baslik: "Başvuru Durumu Güncellendi",
+            Gradient: "linear-gradient(135deg,#0891b2 0%,#0e7490 100%)",
+            BadgeSinif: "bg-info-subtle text-info-emphasis border-info",
+            BadgeYazi: "Başvuru Durumu"
+        ),
+        BildirimTuru.GenelDuyuru => (
+            Ikon: "bi-megaphone-fill",
+            Baslik: "Genel Duyuru",
+            Gradient: "linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%)",
+            BadgeSinif: "bg-secondary-subtle text-secondary-emphasis border-secondary",
+            BadgeYazi: "Genel Duyuru"
+        ),
+        _ => (
+            Ikon: "bi-bell-fill",
+            Baslik: "Bildirim",
+            Gradient: "linear-gradient(135deg,#475569 0%,#334155 100%)",
+            BadgeSinif: "bg-light text-dark border-secondary",
+            BadgeYazi: "Bildirim"
+        )
+    };
+}
+
+<section class="container-fluid p-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <a asp-action="Bildirimlerim"
+           class="btn btn-outline-secondary rounded-3 shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i>
+            Bildirimlerime Dön
+        </a>
+        <span class="badge border rounded-pill @turBadgeSinif border-opacity-50 px-4 py-2 fw-semibold">
+            <i class="bi bi-@turIkon me-1"></i>
+            @turBadgeYazi
+        </span>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-xxl-10 col-xl-11">
+
+            <!-- Gradient Başlık Kartı -->
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
+                <div class="card-header border-0 py-5 px-4 px-sm-5 text-white position-relative overflow-hidden"
+                     style="background:@turGradient;">
+                    <div class="position-relative z-1">
+                        <div class="row align-items-center g-4">
+                            <div class="col-auto">
+                                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-15 shadow-lg"
+                                     style="width:88px;height:88px;">
+                                    <i class="bi bi-@turIkon display-4 text-white"></i>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h2 class="fw-bold mb-2 text-white">@turBaslik</h2>
+                                <h4 class="mb-0 text-white opacity-95 fw-semibold">@Model.Baslik</h4>
+                                <div class="d-flex gap-4 mt-3 flex-wrap small text-white opacity-90">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-calendar3"></i>
+                                        <span><strong>@Model.OlusturulmaTarihi:dd.MM.yyyy</strong></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-clock"></i>
+                                        <span>Saat @Model.OlusturulmaTarihi:HH:mm</span>
+                                    </div>
+                                    @if (Model.OkunmaTarihi.HasValue)
+                                    {
+                                        <div class="d-flex align-items-center gap-1 bg-white bg-opacity-15 rounded-pill px-3 py-1">
+                                            <i class="bi bi-check2-all"></i>
+                                            <span><strong>Okundu:</strong> @Model.OkunmaTarihi.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                                        </div>
+                                    }
+                                    <div class="d-flex align-items-center gap-1 bg-white bg-opacity-15 rounded-pill px-3 py-1">
+                                        <i class="bi bi-hash"></i>
+                                        <span><strong>Bildirim No:</strong> #@Model.Id</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bildirim İçeriği (tam, KESİLMEDEN) -->
+            <div class="card border rounded-4 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="mb-0 fw-bold text-secondary">
+                        <i class="bi bi-chat-left-text-fill me-2 text-primary"></i>
+                        Bildirim İçeriği
+                    </h6>
+                </div>
+                <div class="card-body p-4 p-sm-5">
+                    <div class="fs-5 lh-lg text-dark">@Model.Icerik</div>
+                </div>
+            </div>
+
+            <!-- İlgili Kayıtlar (2 kolon) -->
+            <div class="row g-4 mb-4">
+
+                <!-- SOL: İlgili Başvuru (varsa) -->
+                @if (Model.KayipBildirimi != null)
+                {
+                    <div class="col-lg-6">
+                        <div class="card border-3 rounded-4 shadow-sm h-100"
+                             style="border-style:solid;border-color:#fee2e2;">
+                        <div class="card-header bg-danger-subtle py-3 border-bottom-0">
+                            <h6 class="mb-0 fw-bold text-danger-emphasis">
+                                <i class="bi bi-person-arms-up me-2 fs-5"></i>
+                                İlgili Kayıp Başvurunuz
+                            </h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-4 align-items-start">
+                            @{
+                                var bResim = Model.KayipBildirimi.Resimler?.FirstOrDefault();
+                                string? bResimYolu = null;
+                                if (bResim != null)
+                                {
+                                    if (!string.IsNullOrWhiteSpace(bResim.ThumbnailYolu))
+                                        bResimYolu = "/" + bResim.ThumbnailYolu.Replace("\\", "/");
+                                    else if (!string.IsNullOrWhiteSpace(bResim.DosyaYolu))
+                                        bResimYolu = "/" + bResim.DosyaYolu.Replace("\\", "/");
+                                }
+                            }
+                            @if (!string.IsNullOrWhiteSpace(bResimYolu))
+                            {
+                                <img src="@bResimYolu"
+                                     alt="Başvuru Resmi"
+                                     class="rounded-3 border shadow-sm object-fit-cover flex-shrink-0"
+                                     style="width:120px;height:120px;" />
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center rounded-3 border shadow-sm bg-light text-danger-emphasis bg-opacity-50 flex-shrink-0"
+                                     style="width:120px;height:120px;">
+                                    <i class="bi bi-card-image display-4 opacity-50"></i>
+                                </div>
+                            }
+
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="mb-1">
+                                    @{
+                                        string basvuruGoster =
+                                            !string.IsNullOrWhiteSpace(Model.KayipBildirimi.BasvuruNo)
+                                                ? Model.KayipBildirimi.BasvuruNo
+                                                : ("#" + Model.KayipBildirimi.Id);
+                                    }
+                                    <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill border-danger border-opacity-25 fw-semibold px-3 py-1">
+                                        @basvuruGoster
+                                    </span>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-truncate">@Model.KayipBildirimi.EsyaAdi</h6>
+                                <div class="small text-muted d-flex flex-column gap-1">
+                                    @if (Model.KayipBildirimi.Kategori != null)
+                                    {
+                                        <span><i class="bi bi-tag me-1"></i>@Model.KayipBildirimi.Kategori.Ad</span>
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(Model.KayipBildirimi.Marka + Model.KayipBildirimi.Renk))
+                                    {
+                                        <span>
+                                            <i class="bi bi-palette me-1"></i>
+                                            @Model.KayipBildirimi.Marka / @Model.KayipBildirimi.Model / @Model.KayipBildirimi.Renk
+                                        </span>
+                                    }
+                                    <span><i class="bi bi-calendar me-1"></i>Başvuru: @Model.KayipBildirimi.BasvuruTarihi.ToString("dd.MM.yyyy")</span>
+                                    <span>
+                                        <i class="bi bi-activity me-1"></i>Durum:
+                                        <strong class="text-dark">@Model.KayipBildirimi.Durum</strong>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                            <a asp-controller="KayipBildirimi"
+                               asp-action="Details"
+                               asp-route-id="@Model.KayipBildirimi.Id"
+                               class="btn w-100 mt-4 rounded-3 py-3 fw-bold text-white shadow"
+                               style="background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%);">
+                                <i class="bi bi-box-arrow-up-right me-2 fs-5"></i>
+                                👉 BAŞVURUYU DETAYLI GÖRÜNTÜLE
+                            </a>
+                        </div>
+                    </div>
+                    </div>
+                }
+
+                <!-- SAĞ: İlgili Eşleşme / Bulunan Eşya (varsa) -->
+                @if (Model.Eslesme != null && Model.Eslesme.KayipEsya != null)
+                {
+                    <div class="col-lg-6">
+                        <div class="card border-3 rounded-4 shadow-sm h-100"
+                             style="border-style:solid;border-color:#dcfce7;">
+                            <div class="card-header bg-success-subtle py-3 border-bottom-0">
+                                <h6 class="mb-0 fw-bold text-success-emphasis">
+                                    <i class="bi bi-search-heart me-2 fs-5"></i>
+                                    Bulunan / Eşleşen Eşya
+                                </h6>
+                            </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-4 align-items-start">
+                                @{
+                                    var eResim = Model.Eslesme.KayipEsya.Resimler?.FirstOrDefault();
+                                    string? eResimYolu = null;
+                                    if (eResim != null)
+                                    {
+                                        if (!string.IsNullOrWhiteSpace(eResim.ThumbnailYolu))
+                                            eResimYolu = "/" + eResim.ThumbnailYolu.Replace("\\", "/");
+                                        else if (!string.IsNullOrWhiteSpace(eResim.DosyaYolu))
+                                            eResimYolu = "/" + eResim.DosyaYolu.Replace("\\", "/");
+                                    }
+                                }
+                                @if (!string.IsNullOrWhiteSpace(eResimYolu))
+                                {
+                                    <img src="@eResimYolu"
+                                         alt="Eşya Resmi"
+                                         class="rounded-3 border shadow-sm object-fit-cover flex-shrink-0"
+                                         style="width:120px;height:120px;" />
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-center rounded-3 border shadow-sm bg-light text-success-emphasis bg-opacity-50 flex-shrink-0"
+                                         style="width:120px;height:120px;">
+                                        <i class="bi bi-card-image display-4 opacity-50"></i>
+                                    </div>
+                                }
+
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="mb-1">
+                                        <span class="badge bg-success-subtle text-success-emphasis rounded-pill border-success border-opacity-25 fw-semibold px-3 py-1">
+                                            #@Model.Eslesme.KayipEsya.Id
+                                        </span>
+                                        @if (Model.Eslesme.Skor > 0)
+                                        {
+                                            <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis ms-1">
+                                                %@Model.Eslesme.Skor Eşleşme
+                                            </span>
+                                        }
+                                    </div>
+                                    <h6 class="fw-bold mb-1 text-truncate">@Model.Eslesme.KayipEsya.EsyaAdi</h6>
+                                    <div class="small text-muted d-flex flex-column gap-1">
+                                        @if (Model.Eslesme.KayipEsya.Kategori != null)
+                                        {
+                                            <span><i class="bi bi-tag me-1"></i>@Model.Eslesme.KayipEsya.Kategori.Ad</span>
+                                        }
+                                        if (!string.IsNullOrWhiteSpace(Model.Eslesme.KayipEsya.Marka + Model.Eslesme.KayipEsya.Renk))
+                                        {
+                                            <span>
+                                                <i class="bi bi-palette me-1"></i>
+                                                @Model.Eslesme.KayipEsya.Marka / @Model.Eslesme.KayipEsya.Model / @Model.Eslesme.KayipEsya.Renk
+                                            </span>
+                                        }
+                                        <span><i class="bi bi-calendar me-1"></i>Bulunma: @Model.Eslesme.KayipEsya.BulunmaTarihi.ToString("dd.MM.yyyy")</span>
+                                        if (!string.IsNullOrWhiteSpace(Model.Eslesme.KayipEsya.RafNo))
+                                        {
+                                            <span><i class="bi bi-box-seam me-1"></i>Raf No: <strong>@Model.Eslesme.KayipEsya.RafNo</strong></span>
+                                        }
+                                        <span>
+                                            <i class="bi bi-activity me-1"></i>Durum:
+                                            <strong class="text-dark">@Model.Eslesme.KayipEsya.Durum</strong>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.KayipBildirimi != null)
+                            {
+                                <a asp-controller="KayipBildirimi"
+                                   asp-action="Details"
+                                   asp-route-id="@Model.KayipBildirimi.Id"
+                                   class="btn w-100 mt-4 rounded-3 py-3 fw-bold text-white shadow"
+                                   style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);">
+                                    <i class="bi bi-info-circle me-2 fs-5"></i>
+                                    👉 BAŞVURU DETAYINDAN TÜM BİLGİLERİ GÖR
+                                </a>
+                            }
+                        </div>
+                    </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Alt Nav Butonlar -->
+            <div class="d-flex justify-content-between flex-wrap gap-2 border-top pt-4">
+                <a asp-action="Bildirimlerim"
+                   class="btn btn-outline-secondary rounded-3 shadow-sm px-5">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Tüm Bildirimlerim
+                </a>
+                <a asp-action="Index"
+                   class="btn btn-primary rounded-3 shadow-sm px-5">
+                    <i class="bi bi-house me-1"></i>
+                    Ana Sayfaya Dön
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</section>

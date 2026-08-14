@@ -38,7 +38,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .Include(x => x.Eslesme)
                     .ThenInclude(x => x!.KayipEsya)
                         .ThenInclude(x => x!.Kategori)
-                .Include(x => x.TeslimEden)
+                .Include(x => x.TeslimEdenUser)
                 .Where(x => x.AktifMi)
                 .AsQueryable();
 
@@ -93,7 +93,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 .Include(x => x.Eslesme)
                     .ThenInclude(x => x!.KayipEsya)
                         .ThenInclude(x => x!.Kategori)
-                .Include(x => x.TeslimEden)
+                .Include(x => x.TeslimEdenUser)
                 .FirstOrDefaultAsync(x => x.Id == id.Value);
 
             if (model == null) return NotFound();
@@ -243,13 +243,13 @@ namespace KayipEsyaOtomasyonu.Controllers
 
                 if (eslesme.KayipEsya != null)
                 {
-                    eslesme.KayipEsya.Durum = "Teslim Edildi";
+                    eslesme.KayipEsya.Durum = "Sahibe Teslim Edildi";
                     eslesme.KayipEsya.GuncellenmeTarihi = DateTime.Now;
                 }
 
                 if (eslesme.KayipBildirimi != null)
                 {
-                    eslesme.KayipBildirimi.Durum = "Teslim Edildi";
+                    eslesme.KayipBildirimi.Durum = "Tamamlandı";
                     eslesme.KayipBildirimi.GuncellenmeTarihi = DateTime.Now;
 
                     if (!string.IsNullOrEmpty(eslesme.KayipBildirimi.VatandasId))

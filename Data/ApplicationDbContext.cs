@@ -194,12 +194,12 @@ namespace KayipEsyaOtomasyonu.Data
 
             builder.Entity<TeslimIslemi>()
                 .HasOne(t => t.Eslesme)
-                .WithMany()
-                .HasForeignKey(t => t.EslesmeId)
+                .WithOne(e => e.TeslimIslemi)
+                .HasForeignKey<TeslimIslemi>(t => t.EslesmeId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<TeslimIslemi>()
-                .HasOne(t => t.TeslimEden)
+                .HasOne(t => t.TeslimEdenUser)
                 .WithMany()
                 .HasForeignKey(t => t.TeslimEdenUserId)
                 .IsRequired(false)
