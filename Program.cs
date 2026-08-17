@@ -7,6 +7,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddUserSecrets<Program>(optional: true);
+}
+
+builder.Configuration.AddEnvironmentVariables(prefix: "KAYIPESYA_");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -39,10 +46,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.AllowedForNewUsers = true;
 
-    // KAYIT SIRASINDA e-posta dogrulamasini KAPAT.
-    // Sadece: E-posta DEGISTIRME + Sifre SIFIRLAMA islemlerinde dogrulama olsun (ChangeEmail/PasswordReset token saglayicilari halen AKTIF).
-    options.SignIn.RequireConfirmedAccount = false;
-    options.SignIn.RequireConfirmedEmail = false;
+    // KAYIT ve kritik guvenlik islemlerinde e-posta dogrulamasi zorunlu.
+    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedEmail = true;
 
     options.Tokens.EmailConfirmationTokenProvider = TokenOptions.DefaultEmailProvider;
     options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;

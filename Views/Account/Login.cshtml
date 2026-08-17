@@ -224,13 +224,13 @@
                                  style="border-left:4px solid #0284c7;">
                                 <i class="bi bi-envelope-paper flex-shrink-0 mt-1 text-info-emphasis"></i>
                                 <div>
-                                    Doğrulama e-postası gelmedi mi?
+                                    Doğrulama kodu gelmedi mi?
                                     <a asp-controller="Account"
                                        asp-action="ResendConfirmEmail"
                                        asp-route-email="@((string)(ViewBag.ResendEmail ?? string.Empty))"
                                        class="fw-bold ms-1 text-info-emphasis text-underline">
                                         <i class="bi bi-send-plus me-1"></i>
-                                        Tekrar gönder
+                                        Kodu tekrar gönder
                                     </a>
                                 </div>
                             </div>
@@ -259,20 +259,6 @@
                        class="fw-semibold ms-1">
                         Kayıt Ol
                     </a>
-
-                </div>
-
-                <div class="login-test-account">
-
-                    <strong>Geliştirme hesabı</strong>
-
-                    <span>
-                        E-posta: admin@arnavutkoy.bel.tr
-                    </span>
-
-                    <span>
-                        Şifre: Admin123
-                    </span>
 
                 </div>
 

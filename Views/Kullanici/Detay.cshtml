@@ -204,7 +204,7 @@
                                     <td><small class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">@b.Kategori?.Ad</small></td>
                                     <td><small class="text-muted">@b.KayipTarihi.ToString("dd.MM.yyyy")</small></td>
                                     <td>
-                                        @if (b.Durum == "Teslim Edildi")
+                                        @if (b.Durum == "Tamamlandı" || b.Durum == "Teslim Edildi")
                                         {
                                             <span class="badge rounded-pill bg-success text-white px-3">@b.Durum</span>
                                         }

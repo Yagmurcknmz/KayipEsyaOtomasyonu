@@ -215,7 +215,7 @@
                                         <td>@(string.IsNullOrWhiteSpace(esya.BulunmaYeri) ? "-" : esya.BulunmaYeri)</td>
                                         <td>@(string.IsNullOrWhiteSpace(esya.RafNo) ? "-" : esya.RafNo)</td>
                                         <td>
-                                            @if (esya.Durum == "Teslim Edildi")
+                                            @if (esya.Durum == "Sahibe Teslim Edildi" || esya.Durum == "Teslim Edildi")
                                             {
                                                 <span class="badge bg-success">@esya.Durum</span>
                                             }
@@ -362,7 +362,7 @@
                                         <td>@b.KayipTarihi.ToString("dd.MM.yyyy")</td>
                                         <td>@(string.IsNullOrWhiteSpace(b.KayipYeri) ? "-" : b.KayipYeri)</td>
                                         <td>
-                                            @if (b.Durum == "Teslim Edildi")
+                                            @if (b.Durum == "Tamamlandı" || b.Durum == "Teslim Edildi")
                                             {
                                                 <span class="badge bg-success">@b.Durum</span>
                                             }

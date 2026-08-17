@@ -534,7 +534,7 @@
                                             @(b.Vatandas != null ? b.Vatandas.Ad + " " + b.Vatandas.Soyad : "-")
                                         </td>
                                         <td>
-                                            @if (b.Durum == "Teslim Edildi")
+                                            @if (b.Durum == "Tamamlandı" || b.Durum == "Teslim Edildi")
                                             {
                                                 <span class="badge bg-success">@b.Durum</span>
                                             }

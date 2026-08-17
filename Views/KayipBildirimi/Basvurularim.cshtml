@@ -82,7 +82,21 @@
                                 <td>@basvuru.KayipYeri</td>
 
                                 <td>
-                                    <span class="badge bg-info text-dark">
+                                    @{
+                                        var badgeClass = basvuru.Durum switch
+                                        {
+                                            "Tamamlandı" => "bg-success text-white",
+                                            "Sahibe Teslim Edildi" => "bg-success text-white",
+                                            "Teslim Edildi" => "bg-success text-white",
+                                            "Eşleşme Bulundu" => "bg-info text-dark",
+                                            "Eşleşme Aranıyor" => "bg-warning text-dark",
+                                            "İşleme Alındı" => "bg-primary text-white",
+                                            "Beklemede" => "bg-warning text-dark",
+                                            "Reddedildi" => "bg-danger text-white",
+                                            _ => "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle"
+                                        };
+                                    }
+                                    <span class="badge rounded-pill px-3 py-2 @badgeClass">
                                         @basvuru.Durum
                                     </span>
                                 </td>

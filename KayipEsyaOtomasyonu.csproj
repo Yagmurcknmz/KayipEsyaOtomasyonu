@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <DefaultItemExcludes>$(DefaultItemExcludes);KayipEsyaBulmaOtomasyonu/**;KayipEsyaBulma Otomasyonu/**;kayipesyabulmaotomasyonu/**</DefaultItemExcludes>
+    <UserSecretsId>3d754a00-72b9-4903-bd1b-2c263d1d9c23</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,7 +35,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
   </ItemGroup>
 
 </Project>

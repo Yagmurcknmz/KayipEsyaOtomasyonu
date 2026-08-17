@@ -47,7 +47,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             ViewBag.TeslimEdilenSayim = await _context.KayipBildirimleri
                 .CountAsync(b =>
                     b.VatandasId == user.Id &&
-                    b.Durum == "Teslim Edildi" &&
+                    b.Durum == "Tamamlandı" &&
                     b.AktifMi);
 
             ViewBag.EslesmeBekleyen = await _context.KayipBildirimleri

@@ -1,0 +1,191 @@
+@model KayipEsyaOtomasyonu.ViewModels.EmailKodDogrulamaViewModel
+@{
+    ViewData["Title"] = "E-posta Kodu Doğrula";
+    Layout = null;
+
+    var baslik = ViewBag.PageTitle as string ?? "Doğrulama Kodu";
+    var aciklama = ViewBag.PageDescription as string ?? "E-posta adresinize gönderilen kodu giriniz.";
+    var butonYazi = ViewBag.SubmitText as string ?? "Kodu Doğrula";
+    var yenidenYollaAction = ViewBag.ResendAction as string ?? "ResendConfirmEmail";
+    var purpose = (Model.Purpose ?? string.Empty).ToLowerInvariant();
+    var devCode = TempData["DevVerificationCode"] as string;
+    var devPurpose = TempData["DevVerificationPurpose"] as string;
+    var devEmail = TempData["DevVerificationEmail"] as string;
+    var gosterimEmail = !string.IsNullOrWhiteSpace(devEmail) ? devEmail : Model.Email;
+    var maskedEmail = gosterimEmail;
+
+    if (!string.IsNullOrWhiteSpace(maskedEmail))
+    {
+        var parcalar = maskedEmail.Split('@');
+        if (parcalar.Length == 2 && parcalar[0].Length > 2)
+        {
+            maskedEmail = $"{parcalar[0][0]}{new string('*', Math.Max(2, parcalar[0].Length - 2))}{parcalar[0][^1]}@{parcalar[1]}";
+        }
+    }
+
+    var basariMesaji = (TempData["Mesaj"] as string) ?? (TempData["BasariliMesaj"] as string);
+    var hataMesaji = TempData["HataMesaji"] as string;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body style="background:
+    radial-gradient(900px 480px at 90% -10%, rgba(11,92,255,.18), transparent 60%),
+    radial-gradient(700px 400px at -10% 110%, rgba(16,185,129,.18), transparent 60%),
+    linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);">
+
+    <main class="min-vh-100 d-flex align-items-center justify-content-center px-3 py-5">
+        <div class="card border-0 shadow-lg rounded-5 overflow-hidden" style="max-width:560px;width:100%;">
+            <div class="p-4 p-md-5 text-white"
+                 style="background:linear-gradient(135deg,#0b5cff 0%,#16a34a 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-4 bg-white bg-opacity-15 d-flex align-items-center justify-content-center"
+                         style="width:62px;height:62px;font-size:30px;">
+                        <i class="bi bi-envelope-check-fill"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-4 mb-1">@baslik</div>
+                        <div class="opacity-90 small">Kayıp Eşya Yönetim Sistemi</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <div class="mb-4 small text-muted">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    @aciklama
+                </div>
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger rounded-4 border-0 mb-4 d-flex gap-2 align-items-start"
+                     style="border-left:5px solid #dc2626;">
+                    <i class="bi bi-x-circle-fill flex-shrink-0 mt-1"></i>
+                    <span></span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(basariMesaji))
+                {
+                    <div class="alert alert-success rounded-4 border-0 mb-4 d-flex gap-2 align-items-start"
+                         style="border-left:5px solid #16a34a;">
+                        <i class="bi bi-check-circle-fill flex-shrink-0 mt-1"></i>
+                        <span>@Html.Raw(basariMesaji)</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(hataMesaji))
+                {
+                    <div class="alert alert-warning rounded-4 border-0 mb-4 d-flex gap-2 align-items-start"
+                         style="border-left:5px solid #f59e0b;">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                        <span>@Html.Raw(hataMesaji)</span>
+                    </div>
+                }
+
+                <div class="alert alert-info border-0 rounded-4 mb-4 d-flex gap-2 align-items-start small"
+                     style="border-left:5px solid #0284c7;">
+                    <i class="bi bi-envelope-paper-heart flex-shrink-0 mt-1 text-info-emphasis"></i>
+                    <div>
+                        Kod şu adrese gönderildi:
+                        <strong>@maskedEmail</strong><br />
+                        Kodun geçerlilik süresi sınırlıdır. Lütfen gelen kutusu ve spam klasörünü kontrol edin.
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(devCode) && string.Equals(devPurpose, purpose, StringComparison.OrdinalIgnoreCase))
+                {
+                    <div class="alert alert-warning border-0 rounded-4 mb-4"
+                         style="border-left:5px solid #f59e0b;">
+                        <div class="fw-semibold text-warning-emphasis mb-2">
+                            <i class="bi bi-tools me-1"></i>
+                            Geliştirme Modu Doğrulama Kodu
+                        </div>
+                        <div class="small text-muted mb-2">
+                            SMTP ayarı olmadığı için kod ekranda gösteriliyor.
+                        </div>
+                        <div class="text-center rounded-4 py-3 px-3 bg-white border border-warning-subtle">
+                            <div class="small text-muted mb-1">Kullanılacak Kod</div>
+                            <div class="fw-bold" style="font-size:2rem;letter-spacing:6px;color:#b45309;">@devCode</div>
+                        </div>
+                    </div>
+                }
+
+                <form asp-controller="Account" asp-action="VerifyEmailCode" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input asp-for="UserId" type="hidden" />
+                    <input asp-for="Purpose" type="hidden" />
+                    <input asp-for="Email" type="hidden" />
+
+                    <div class="mb-4">
+                        <label asp-for="Code" class="form-label fw-semibold">
+                            <i class="bi bi-shield-lock-fill me-1 text-primary"></i>
+                            Doğrulama Kodu *
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text rounded-start-3 border border-secondary-subtle">
+                                <i class="bi bi-123"></i>
+                            </span>
+                            <input asp-for="Code"
+                                   class="form-control rounded-end-3 border border-secondary-subtle border-start-0 text-center fw-bold"
+                                   placeholder="E-postadaki kodu girin"
+                                   autocomplete="one-time-code" />
+                        </div>
+                        <span asp-validation-for="Code" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-lg w-100 text-white rounded-4 shadow-sm fw-semibold"
+                            style="background:linear-gradient(135deg,#0b5cff,#16a34a);border:0;">
+                        <i class="bi bi-patch-check-fill me-2"></i>
+                        @butonYazi
+                    </button>
+                </form>
+
+                <div class="d-flex flex-wrap justify-content-between gap-3 align-items-center mt-4 pt-4 border-top">
+                    <a asp-controller="Account"
+                       asp-action="@((purpose == "password" || purpose == "emailchange") ? "Profilim" : "Login")"
+                       class="btn btn-outline-secondary rounded-4 px-4 fw-semibold">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        @((purpose == "password" || purpose == "emailchange") ? "Profile Dön" : "Girişe Dön")
+                    </a>
+
+                    @if (purpose == "password" || purpose == "reset" || purpose == "emailchange")
+                    {
+                        <form asp-controller="Account" asp-action="@yenidenYollaAction" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            @if (purpose == "reset")
+                            {
+                                <input type="hidden" name="userId" value="@Model.UserId" />
+                            }
+                            <button type="submit" class="btn btn-link fw-semibold text-decoration-none">
+                                <i class="bi bi-arrow-repeat me-1"></i>
+                                Kodu Tekrar Gönder
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account"
+                           asp-action="@yenidenYollaAction"
+                           asp-route-email="@Model.Email"
+                           class="btn btn-link fw-semibold text-decoration-none">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            Kodu Tekrar Gönder
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

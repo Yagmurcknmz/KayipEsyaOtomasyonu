@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System.Diagnostics;
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System.Diagnostics;
 using KayipEsyaOtomasyonu.Data;
 using KayipEsyaOtomasyonu.Models;
 using KayipEsyaOtomasyonu.ViewModels;
@@ -63,7 +63,7 @@ namespace KayipEsyaOtomasyonu.Controllers
 
                 TeslimEdilen = await _context.KayipEsyalar
                     .CountAsync(x =>
-                        x.Durum == "Teslim Edildi"),
+                        x.Durum == "Sahibe Teslim Edildi"),
 
                 AktifKayipEsya = await _context.KayipEsyalar
                     .CountAsync(x => x.AktifMi),
@@ -118,7 +118,7 @@ namespace KayipEsyaOtomasyonu.Controllers
                 new { Ad = "Eşleşme Bulundu", Renk = "bg-info text-dark", Sol = "#cffafe", Sag = "#ecfeff" },
                 new { Ad = "Vatandaşa Haber Verildi", Renk = "bg-secondary", Sol = "#e2e8f0", Sag = "#f1f5f9" },
                 new { Ad = "Teslim Bekliyor", Renk = "bg-orange", Sol = "#ffedd5", Sag = "#fff7ed" },
-                new { Ad = "Teslim Edildi", Renk = "bg-success", Sol = "#dcfce7", Sag = "#f0fdf4" },
+                new { Ad = "Sahibe Teslim Edildi", Renk = "bg-success", Sol = "#dcfce7", Sag = "#f0fdf4" },
                 new { Ad = "Arşivlendi", Renk = "bg-dark", Sol = "#e5e7eb", Sag = "#f9fafb" }
             };
 
@@ -146,7 +146,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             model.BugunYeniKayit = await _context.KayipEsyalar.CountAsync(x => x.OlusturmaTarihi.Date == DateTime.Today);
             model.BugunYeniBasvuru = await _context.KayipBildirimleri.CountAsync(x => x.BasvuruTarihi.Date == DateTime.Today);
 
-            var topBulunan = await _context.KayipEsyalar.CountAsync(x => x.AktifMi && x.Durum == "Teslim Edildi");
+            var topBulunan = await _context.KayipEsyalar.CountAsync(x => x.AktifMi && x.Durum == "Sahibe Teslim Edildi");
             model.TeslimOraniYuzde = toplamKayipEsya == 0 ? 0 : Math.Round(100.0 * topBulunan / toplamKayipEsya, 1);
 
 

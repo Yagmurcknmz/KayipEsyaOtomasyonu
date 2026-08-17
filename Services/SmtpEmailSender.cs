@@ -21,12 +21,17 @@ namespace KayipEsyaOtomasyonu.Services
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(_settings.Host))
+                if (string.IsNullOrWhiteSpace(toEmail))
                 {
-                    _logger.LogWarning(
-                        "SMTP Host ayarlanmamis. E-posta gonderilmedi: To={To}, Subject={Subject}\nBody:{Body}",
-                        toEmail, subject, htmlBody);
-                    return;
+                    throw new InvalidOperationException("Alıcı e-posta adresi boş olduğu için e-posta gönderilemedi.");
+                }
+
+                if (string.IsNullOrWhiteSpace(_settings.Host) ||
+                    string.IsNullOrWhiteSpace(_settings.Username) ||
+                    string.IsNullOrWhiteSpace(_settings.Password))
+                {
+                    throw new InvalidOperationException(
+                        "SMTP ayarları eksik. Geliştirme ortamında user-secrets kullanın veya KAYIPESYA_SmtpSettings__Host, KAYIPESYA_SmtpSettings__Username, KAYIPESYA_SmtpSettings__Password değişkenlerini tanımlayın.");
                 }
 
                 var smtp = new SmtpClient(_settings.Host, _settings.Port)
@@ -46,7 +51,7 @@ namespace KayipEsyaOtomasyonu.Services
                 using var message = new MailMessage(from, to)
                 {
                     Subject = subject,
-                    Body = htmlBody,
+                    Body = htmlBody ?? string.Empty,
                     IsBodyHtml = true,
                     Priority = MailPriority.Normal
                 };

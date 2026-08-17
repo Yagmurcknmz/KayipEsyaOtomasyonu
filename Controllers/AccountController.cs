@@ -3,8 +3,11 @@ using KayipEsyaOtomasyonu.Models;
 using KayipEsyaOtomasyonu.Services;
 using KayipEsyaOtomasyonu.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace KayipEsyaOtomasyonu.Controllers
 {
@@ -14,17 +17,44 @@ namespace KayipEsyaOtomasyonu.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailSender _emailSender;
         private readonly ILogger<AccountController> _logger;
+        private readonly IWebHostEnvironment _environment;
+        private readonly SmtpSettings _smtpSettings;
+        private readonly IDataProtector _passwordChangeProtector;
+
+        private const string VerifyPurposeRegister = "register";
+        private const string VerifyPurposePasswordChange = "password";
+        private const string VerifyPurposeForgotPassword = "reset";
+        private const string VerifyPurposeEmailChange = "emailchange";
+        private const string PasswordChangeTokenProvider = "PendingPasswordChange";
+        private const string PasswordChangeResetTokenName = "ResetToken";
+        private const string PasswordChangeNewPasswordName = "NewPassword";
+        private const string PasswordChangeExpiresAtName = "ExpiresAt";
+        private const string ForgotPasswordTokenProvider = "PendingForgotPassword";
+        private const string ForgotPasswordResetTokenName = "ResetToken";
+        private const string ForgotPasswordExpiresAtName = "ExpiresAt";
+        private const string EmailChangeTokenProvider = "PendingEmailChange";
+        private const string EmailChangeTokenName = "ChangeToken";
+        private const string EmailChangeNewEmailName = "NewEmail";
+        private const string EmailChangeOldEmailName = "OldEmail";
+        private const string EmailChangeExpiresAtName = "ExpiresAt";
 
         public AccountController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             IEmailSender emailSender,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            IDataProtectionProvider dataProtectionProvider,
+            IWebHostEnvironment environment,
+            IOptions<SmtpSettings> smtpOptions)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _emailSender = emailSender;
             _logger = logger;
+            _environment = environment;
+            _smtpSettings = smtpOptions.Value;
+            _passwordChangeProtector =
+                dataProtectionProvider.CreateProtector("AccountController.PendingPasswordChange.v1");
         }
 
         [HttpGet]
@@ -79,22 +109,13 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return View(model);
             }
 
-            // EmailConfirmed=false olan ESKI kayitlar (mail degistirme sonrasi, eski kullanicilar veya admin/personel):
-            // Artik girise ENGEL OLMAYALIM (kullanici giris yapsin).
-            // SADECE kullaniciya UYARI goster (bilgilendirme) — girise izin ver.
             if (!kullanici.EmailConfirmed)
             {
-                var kullaniciRolleri = await _userManager.GetRolesAsync(kullanici);
-                var yoneticiMi = kullaniciRolleri.Contains("Admin") || kullaniciRolleri.Contains("Personel");
-
-                string uyariMesaji = yoneticiMi
-                    ? "⚠️ Yönetici hesabınız için e-posta doğrulaması tamamlanmamış. Girişe izin verildi, fakat lütfen Profilim > E-posta doğrulamasını en kısa sürede tamamlayın."
-                    : "ℹ️ Hesabınızın e-posta doğrulaması henüz tamamlanmamış. Girişe izin verildi. Güvenliğiniz için Profilim menüsünden doğrulama adımını tamamlamanız önerilir.";
-
-                // Sadece bir kez uyar — TempData yerine ViewData aracılığı ile (view'da goster)
-                // (Aksi takdirde IsNotAllowed/NotAllowed error dönebilir ama Program.cs ile engellendigi icin girise izin verilecek).
-                ViewBag.EmailConfirmUyari = uyariMesaji;
-                // İLERIDE: Profilim > Mail değiştirme akışında zaten EmailConfirmed=false edilir ve mail gönderilir, ConfirmEmailChange ile onaylanınca true döner.
+                ViewBag.ResendEmail = kullanici.Email ?? email;
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Bu hesap için e-posta doğrulaması henüz tamamlanmamış. Lütfen e-posta adresinize gönderilen kodu doğrulayın.");
+                return View(model);
             }
 
             var sonuc = await _signInManager.PasswordSignInAsync(
@@ -182,6 +203,16 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             if (mevcutKullanici != null)
             {
+                if (!mevcutKullanici.EmailConfirmed)
+                {
+                    await KayitDogrulamaKoduGonderAsync(mevcutKullanici);
+                    TempData["BasariliMesaj"] =
+                        "Bu e-posta adresi için doğrulama bekleyen bir hesap zaten mevcut. Yeni doğrulama kodu e-posta adresinize tekrar gönderildi.";
+                    return RedirectToAction(
+                        nameof(VerifyEmailCode),
+                        new { userId = mevcutKullanici.Id, purpose = VerifyPurposeRegister });
+                }
+
                 ModelState.AddModelError(
                     nameof(model.Email),
                     "Bu e-posta adresiyle kayıtlı bir kullanıcı zaten bulunmaktadır.");
@@ -192,9 +223,7 @@ namespace KayipEsyaOtomasyonu.Controllers
             {
                 UserName = email,
                 Email = email,
-                // Kayit sirasinda e-posta dogrulamasini OTOMATIK tamamla (kullanici beklemesin, direkt giris yapsin).
-                // Sifre degistirme / E-posta DEGISTIRME islemleri icin dogrulama zorunlu olmaya devam eder.
-                EmailConfirmed = true,
+                EmailConfirmed = false,
                 PhoneNumber = model.Telefon.Trim(),
 
                 Ad = model.Ad.Trim(),
@@ -238,13 +267,412 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return View(model);
             }
 
-            // KAYIT SIRASINDA e-posta dogrulama maili GONDERILMIYOR (kullanici direkt giris yapsın).
-            // Sadece: Profilim > E-posta DEGISTIRME / Sifre SIFIRLAMA islemlerinde dogrulama maili gonderilecek
-            // (ChangeEmail / ForgotPassword action'ları degistirilmedi — aynı şekilde calısmaya devam eder).
+            try
+            {
+                await KayitDogrulamaKoduGonderAsync(vatandas);
+            }
+            catch (Exception ex)
+            {
+                TempData["HataMesaji"] =
+                    "Hesabınız oluşturuldu ancak doğrulama kodu gönderilemedi: " + ex.Message;
+                return RedirectToAction(
+                    nameof(VerifyEmailCode),
+                    new { userId = vatandas.Id, purpose = VerifyPurposeRegister });
+            }
 
             TempData["BasariliMesaj"] =
-                $"Hoş geldiniz! Hesabınız başarıyla oluşturuldu ve e-posta doğrulaması otomatik olarak tamamlandı. {vatandas.Email} adresinizle hemen giriş yapabilirsiniz. ⚠️ Profilim menüsünden ileride e-postanızı değiştirirseniz yeniden doğrulama gerekecektir.";
+                $"Hesabınız oluşturuldu. <strong>{vatandas.Email}</strong> adresine gönderilen doğrulama kodunu girerek kaydınızı tamamlayın.";
 
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = vatandas.Id, purpose = VerifyPurposeRegister });
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmailCode(string userId, string purpose = VerifyPurposeRegister)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                TempData["HataMesaji"] = "Doğrulama işlemi için kullanıcı bilgisi bulunamadı.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                TempData["HataMesaji"] = "Doğrulama yapılacak kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (string.Equals(purpose, VerifyPurposePasswordChange, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(purpose, VerifyPurposeEmailChange, StringComparison.OrdinalIgnoreCase))
+            {
+                var mevcutUser = await _userManager.GetUserAsync(User);
+                if (mevcutUser == null || !string.Equals(mevcutUser.Id, user.Id, StringComparison.Ordinal))
+                {
+                    TempData["HataMesaji"] = "Bu doğrulama ekranına erişmek için hesabınızla giriş yapmış olmalısınız.";
+                    return RedirectToAction(nameof(Login));
+                }
+            }
+
+            var vm = new EmailKodDogrulamaViewModel
+            {
+                UserId = user.Id,
+                Purpose = purpose,
+                Email = user.Email ?? string.Empty
+            };
+
+            if (string.Equals(purpose, VerifyPurposeEmailChange, StringComparison.OrdinalIgnoreCase))
+            {
+                var newEmailProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeNewEmailName);
+
+                if (!string.IsNullOrWhiteSpace(newEmailProtected))
+                {
+                    try
+                    {
+                        vm.Email = _passwordChangeProtector.Unprotect(newEmailProtected);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            VerifyCodeViewAyarla(purpose);
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmailCode(EmailKodDogrulamaViewModel model)
+        {
+            if (model == null) return BadRequest();
+
+            model.Purpose = (model.Purpose ?? VerifyPurposeRegister).Trim().ToLowerInvariant();
+            model.Code = (model.Code ?? string.Empty).Trim().Replace(" ", string.Empty);
+            model.Email = (model.Email ?? string.Empty).Trim();
+
+            if (!ModelState.IsValid)
+            {
+                VerifyCodeViewAyarla(model.Purpose);
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                TempData["HataMesaji"] = "Doğrulama yapılacak kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (string.Equals(model.Purpose, VerifyPurposePasswordChange, StringComparison.Ordinal))
+            {
+                var mevcutUser = await _userManager.GetUserAsync(User);
+                if (mevcutUser == null || !string.Equals(mevcutUser.Id, user.Id, StringComparison.Ordinal))
+                {
+                    TempData["HataMesaji"] = "Şifre değişikliği doğrulaması için hesabınızla tekrar giriş yapın.";
+                    return RedirectToAction(nameof(Login));
+                }
+
+                var kodGecerliMi = await _userManager.VerifyTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider,
+                    model.Code);
+
+                if (!kodGecerliMi)
+                {
+                    ModelState.AddModelError(string.Empty, "Doğrulama kodu hatalı veya süresi dolmuş.");
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                var resetTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeResetTokenName);
+
+                var newPasswordProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeNewPasswordName);
+
+                var expiresAtRaw = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeExpiresAtName);
+
+                if (string.IsNullOrWhiteSpace(resetTokenProtected) ||
+                    string.IsNullOrWhiteSpace(newPasswordProtected) ||
+                    string.IsNullOrWhiteSpace(expiresAtRaw) ||
+                    !DateTimeOffset.TryParse(expiresAtRaw, out var expiresAt) ||
+                    expiresAt < DateTimeOffset.UtcNow)
+                {
+                    await TemizleBekleyenSifreDegisikligiAsync(user);
+                    TempData["HataMesaji"] = "Bekleyen şifre değiştirme isteğinizin süresi dolmuş. Lütfen yeniden deneyin.";
+                    return RedirectToAction(nameof(Profilim));
+                }
+
+                IdentityResult sonuc;
+
+                try
+                {
+                    var resetToken = _passwordChangeProtector.Unprotect(resetTokenProtected);
+                    var newPassword = _passwordChangeProtector.Unprotect(newPasswordProtected);
+
+                    sonuc = await _userManager.ResetPasswordAsync(user, resetToken, newPassword);
+                }
+                catch
+                {
+                    await TemizleBekleyenSifreDegisikligiAsync(user);
+                    TempData["HataMesaji"] = "Bekleyen şifre değiştirme verisi çözülemedi. Lütfen işlemi yeniden başlatın.";
+                    return RedirectToAction(nameof(Profilim));
+                }
+
+                if (!sonuc.Succeeded)
+                {
+                    foreach (var err in sonuc.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, IdentityHatasiniTurkcelestir(err.Code));
+                    }
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                await TemizleBekleyenSifreDegisikligiAsync(user);
+                await _signInManager.RefreshSignInAsync(user);
+
+                try
+                {
+                    await SifreDegisikligiBildirimMailiGonderAsync(
+                        user: user,
+                        islemTuru: "ŞİFRE DEĞIŞIKLIĞI",
+                        aciklama: "Şifreniz, e-posta doğrulama kodu ile onaylanarak güncellenmiştir.");
+                }
+                catch
+                {
+                }
+
+                TempData["BasariliMesaj"] =
+                    "Doğrulama tamamlandı. Şifreniz başarıyla değiştirildi.";
+                return RedirectToAction(nameof(Profilim));
+            }
+
+            if (string.Equals(model.Purpose, VerifyPurposeForgotPassword, StringComparison.Ordinal))
+            {
+                var kodGecerliMi = await _userManager.VerifyTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider,
+                    model.Code);
+
+                if (!kodGecerliMi)
+                {
+                    ModelState.AddModelError(string.Empty, "Doğrulama kodu hatalı veya süresi dolmuş.");
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                var resetTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    ForgotPasswordTokenProvider,
+                    ForgotPasswordResetTokenName);
+
+                var expiresAtRaw = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    ForgotPasswordTokenProvider,
+                    ForgotPasswordExpiresAtName);
+
+                if (string.IsNullOrWhiteSpace(resetTokenProtected) ||
+                    string.IsNullOrWhiteSpace(expiresAtRaw) ||
+                    !DateTimeOffset.TryParse(expiresAtRaw, out var expiresAt) ||
+                    expiresAt < DateTimeOffset.UtcNow)
+                {
+                    await TemizleBekleyenSifreSifirlamaAsync(user);
+                    TempData["HataMesaji"] = "Şifre sıfırlama kodunuzun süresi dolmuş. Lütfen yeniden talep oluşturun.";
+                    return RedirectToAction(nameof(ForgotPassword));
+                }
+
+                string resetToken;
+                try
+                {
+                    resetToken = _passwordChangeProtector.Unprotect(resetTokenProtected);
+                }
+                catch
+                {
+                    await TemizleBekleyenSifreSifirlamaAsync(user);
+                    TempData["HataMesaji"] = "Şifre sıfırlama verisi çözülemedi. Lütfen işlemi yeniden başlatın.";
+                    return RedirectToAction(nameof(ForgotPassword));
+                }
+
+                TempData["BasariliMesaj"] = "Kod doğrulandı. Şimdi yeni şifrenizi belirleyin.";
+                return RedirectToAction(
+                    nameof(ResetPassword),
+                    new { email = user.Email, token = resetToken });
+            }
+
+            if (string.Equals(model.Purpose, VerifyPurposeEmailChange, StringComparison.Ordinal))
+            {
+                var mevcutUser = await _userManager.GetUserAsync(User);
+                if (mevcutUser == null || !string.Equals(mevcutUser.Id, user.Id, StringComparison.Ordinal))
+                {
+                    TempData["HataMesaji"] = "E-posta değişikliği doğrulaması için hesabınızla tekrar giriş yapın.";
+                    return RedirectToAction(nameof(Login));
+                }
+
+                var kodGecerliMi = await _userManager.VerifyTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider,
+                    model.Code);
+
+                if (!kodGecerliMi)
+                {
+                    ModelState.AddModelError(string.Empty, "Doğrulama kodu hatalı veya süresi dolmuş.");
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                var changeTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeTokenName);
+
+                var newEmailProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeNewEmailName);
+
+                var oldEmailProtected = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeOldEmailName);
+
+                var expiresAtRaw = await _userManager.GetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeExpiresAtName);
+
+                if (string.IsNullOrWhiteSpace(changeTokenProtected) ||
+                    string.IsNullOrWhiteSpace(newEmailProtected) ||
+                    string.IsNullOrWhiteSpace(expiresAtRaw) ||
+                    !DateTimeOffset.TryParse(expiresAtRaw, out var expiresAt) ||
+                    expiresAt < DateTimeOffset.UtcNow)
+                {
+                    await TemizleBekleyenEmailDegisikligiAsync(user);
+                    TempData["HataMesaji"] = "Bekleyen e-posta değiştirme isteğinizin süresi dolmuş. Lütfen yeniden deneyin.";
+                    return RedirectToAction(nameof(Profilim));
+                }
+
+                string changeToken;
+                string yeniEmail;
+                string? eskiEmail = null;
+
+                try
+                {
+                    changeToken = _passwordChangeProtector.Unprotect(changeTokenProtected);
+                    yeniEmail = _passwordChangeProtector.Unprotect(newEmailProtected);
+
+                    if (!string.IsNullOrWhiteSpace(oldEmailProtected))
+                    {
+                        eskiEmail = _passwordChangeProtector.Unprotect(oldEmailProtected);
+                    }
+                }
+                catch
+                {
+                    await TemizleBekleyenEmailDegisikligiAsync(user);
+                    TempData["HataMesaji"] = "Bekleyen e-posta değiştirme verisi çözülemedi. Lütfen işlemi yeniden başlatın.";
+                    return RedirectToAction(nameof(Profilim));
+                }
+
+                var sonuc = await _userManager.ChangeEmailAsync(user, yeniEmail, changeToken);
+                if (!sonuc.Succeeded)
+                {
+                    foreach (var err in sonuc.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, IdentityHatasiniTurkcelestir(err.Code));
+                    }
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                var userNameSonuc = await _userManager.SetUserNameAsync(user, yeniEmail);
+                if (!userNameSonuc.Succeeded)
+                {
+                    foreach (var err in userNameSonuc.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, IdentityHatasiniTurkcelestir(err.Code));
+                    }
+                    VerifyCodeViewAyarla(model.Purpose);
+                    return View(model);
+                }
+
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
+                await TemizleBekleyenEmailDegisikligiAsync(user);
+                await _signInManager.RefreshSignInAsync(user);
+
+                try
+                {
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
+                    var tarihSaat = DateTime.Now.ToString("dd MMMM yyyy HH:mm:ss");
+
+                    var bildirimHtml = EmailSablonuOlustur(
+                        baslik: "✅ E-posta Adresiniz Güncellendi",
+                        govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                               $"<p>Kayıp Eşya Sistemi hesabınızın e-posta adresi başarıyla güncellendi.</p>" +
+                               $"<ul style=\"background:#dcfce7;padding:14px 18px;border-radius:10px;border-left:5px solid #16a34a;list-style:none;\">" +
+                               $"<li><strong>Önceki:</strong> <code>{eskiEmail ?? "-"}</code></li>" +
+                               $"<li><strong>Yeni:</strong> <code>{yeniEmail}</code></li>" +
+                               $"<li><strong>IP:</strong> <code>{ip}</code></li>" +
+                               $"<li><strong>Tarih:</strong> {tarihSaat}</li>" +
+                               $"</ul>" +
+                               $"<p>Artık sisteme <strong>YENİ</strong> e-posta adresinizle ({yeniEmail}) giriş yapacaksınız.</p>");
+
+                    await _emailSender.SendEmailAsync(
+                        user.Email!,
+                        "[Kayıp Eşya] E-posta Adresi Güncellendi",
+                        bildirimHtml);
+
+                    if (!string.IsNullOrWhiteSpace(eskiEmail) &&
+                        !string.Equals(eskiEmail, user.Email, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await _emailSender.SendEmailAsync(
+                            eskiEmail,
+                            "[Kayıp Eşya] Bilgilendirme: E-posta Adresiniz Değiştirildi",
+                            bildirimHtml);
+                    }
+                }
+                catch
+                {
+                }
+
+                TempData["BasariliMesaj"] =
+                    $"E-posta adresiniz başarıyla güncellendi. Artık <strong>{yeniEmail}</strong> adresiyle giriş yapabilirsiniz.";
+                return RedirectToAction(nameof(Profilim));
+            }
+
+            var emailConfirmResult = await _userManager.ConfirmEmailAsync(user, model.Code);
+            if (!emailConfirmResult.Succeeded)
+            {
+                foreach (var err in emailConfirmResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, IdentityHatasiniTurkcelestir(err.Code));
+                }
+
+                if (!emailConfirmResult.Errors.Any())
+                {
+                    ModelState.AddModelError(string.Empty, "Doğrulama kodu hatalı veya süresi dolmuş.");
+                }
+
+                VerifyCodeViewAyarla(model.Purpose);
+                return View(model);
+            }
+
+            TempData["BasariliMesaj"] =
+                "E-posta doğrulamanız başarıyla tamamlandı. Artık hesabınızla giriş yapabilirsiniz.";
             return RedirectToAction(nameof(Login));
         }
 
@@ -325,36 +753,19 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             try
             {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var callbackUrl = Url.Action(
-                    nameof(ResetPassword),
-                    "Account",
-                    new { email = user.Email, token },
-                    protocol: HttpContext.Request.Scheme);
-
-                var html = EmailSablonuOlustur(
-                    baslik: "Şifrenizi Sıfırlayın",
-                    govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
-                           $"<p>Kayıp Eşya Yönetim Sistemi için şifre sıfırlama talebinde bulundunuz.</p>" +
-                           $"<p>Yeni şifrenizi belirlemek için aşağıdaki bağlantıya tıklayın:</p>" +
-                           $"<p style=\"text-align:center;\"><a class=\"btn\" href=\"{callbackUrl}\" style=\"padding:12px 26px;background:#16a34a;color:white;border-radius:8px;text-decoration:none;font-weight:600;\">Şifreyi Sıfırla</a></p>" +
-                           $"<p style=\"color:#64748b;font-size:12px;\">Bu bağlantı 2 saat süreyle geçerlidir. Eğer bu talebi siz yapmadıysanız bu e-postayı dikkate almayınız.</p>");
-
-                await _emailSender.SendEmailAsync(
-                    user.Email!,
-                    "Kayıp Eşya Sistemi - Şifre Sıfırlama",
-                    html);
+                await SifreSifirlamaKoduGonderAsync(user);
             }
             catch (Exception ex)
             {
-                TempData["HataMesaji"] =
-                    "Şifre sıfırlama e-postası gönderilemedi: " + ex.Message;
+                TempData["HataMesaji"] = "Şifre sıfırlama kodu gönderilemedi: " + ex.Message;
                 return View(model);
             }
 
             TempData["BasariliMesaj"] =
-                "Şifre sıfırlama talimatları e-posta adresinize gönderildi. Gelen kutunuzu ve istenmeyen / spam klasörünü kontrol ediniz.";
-            return RedirectToAction(nameof(ForgotPassword));
+                "Şifre sıfırlama doğrulama kodu e-posta adresinize gönderildi. Gelen kutunuzu ve istenmeyen / spam klasörünü kontrol ediniz.";
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposeForgotPassword });
         }
 
         [HttpGet]
@@ -401,6 +812,8 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             if (sonuc.Succeeded)
             {
+                await TemizleBekleyenSifreSifirlamaAsync(user);
+
                 try
                 {
                     await SifreDegisikligiBildirimMailiGonderAsync(
@@ -568,35 +981,92 @@ namespace KayipEsyaOtomasyonu.Controllers
                 return RedirectToAction(nameof(Profilim));
             }
 
-            var sonuc = await _userManager.ChangePasswordAsync(
-                user,
-                model.EskiSifre,
-                model.YeniSifre);
-
-            if (!sonuc.Succeeded)
+            if (string.IsNullOrWhiteSpace(user.Email))
             {
-                var msj = "Şifreniz değiştirilemedi: " +
-                          string.Join(", ", sonuc.Errors.Select(x => IdentityHatasiniTurkcelestir(x.Code)));
-                TempData["HataMesaji"] = msj;
+                TempData["HataMesaji"] = "Hesabınıza tanımlı bir e-posta adresi bulunmadan şifre doğrulama kodu gönderilemez.";
                 return RedirectToAction(nameof(Profilim));
             }
 
-            await _signInManager.RefreshSignInAsync(user);
+            if (!user.EmailConfirmed)
+            {
+                TempData["HataMesaji"] =
+                    "Şifre değiştirme işlemi için önce e-posta adresinizi doğrulamış olmanız gerekir.";
+                return RedirectToAction(nameof(Profilim));
+            }
 
             try
             {
-                await SifreDegisikligiBildirimMailiGonderAsync(
-                    user: user,
-                    islemTuru: "ŞİFRE DEĞIŞIKLIĞI",
-                    aciklama: "Şifreniz, 'Profilim > Şifrenizi Değiştirin' bölümünden BAŞARIYLA güncellenmiştir.");
+                var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider);
+
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var expiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeResetTokenName,
+                    _passwordChangeProtector.Protect(resetToken));
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeNewPasswordName,
+                    _passwordChangeProtector.Protect(model.YeniSifre));
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeExpiresAtName,
+                    expiresAt.ToString("O"));
+
+                if (DevelopmentCodeFallbackAktifMi())
+                {
+                    GelistirmeDogrulamaKodunuHazirla(
+                        verificationCode,
+                        user.Email,
+                        VerifyPurposePasswordChange);
+                    TempData["BasariliMesaj"] =
+                        "Geliştirme ortamında doğrulama kodu ekranda gösterildi. Kodu girince şifreniz güncellenecek.";
+                    return RedirectToAction(
+                        nameof(VerifyEmailCode),
+                        new { userId = user.Id, purpose = VerifyPurposePasswordChange });
+                }
+
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
+                var tarihSaat = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
+
+                var html = EmailSablonuOlustur(
+                    baslik: "Şifre Değiştirme Doğrulama Kodu",
+                    govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                           $"<p>Hesabınız için bir şifre değiştirme talebi oluşturuldu.</p>" +
+                           $"<p>Aşağıdaki doğrulama kodunu girerek işlemi tamamlayın:</p>" +
+                           $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                           $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                           $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{verificationCode}</div>" +
+                           $"</div>" +
+                           $"<p><strong>Geçerlilik:</strong> 10 dakika</p>" +
+                           $"<p style=\"color:#64748b;font-size:12px;\">IP: {ip} | Talep Zamanı: {tarihSaat}</p>");
+
+                await _emailSender.SendEmailAsync(
+                    user.Email,
+                    "[Kayıp Eşya] Şifre Değiştirme Doğrulama Kodu",
+                    html);
             }
-            catch
+            catch (Exception ex)
             {
-                // Mail gönderimi başarısız olsa bile kullanıcıyı kesintiye uğratmıyoruz.
+                await TemizleBekleyenSifreDegisikligiAsync(user);
+                TempData["HataMesaji"] =
+                    "Şifre değiştirme doğrulama kodu gönderilemedi: " + ex.Message;
+                return RedirectToAction(nameof(Profilim));
             }
 
-            TempData["BasariliMesaj"] = "Şifreniz başarıyla değiştirildi. Güvenlik için şifre değişikliği e-posta adresinize bildirildi.";
-            return RedirectToAction(nameof(Profilim));
+            TempData["BasariliMesaj"] =
+                $"Şifre değiştirme doğrulama kodu <strong>{user.Email}</strong> adresine gönderildi. Kod doğrulandıktan sonra şifreniz güncellenecek.";
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposePasswordChange });
         }
 
         [HttpPost]
@@ -640,33 +1110,72 @@ namespace KayipEsyaOtomasyonu.Controllers
             try
             {
                 var token = await _userManager.GenerateChangeEmailTokenAsync(user, yeniEmail);
-                var callbackUrl = Url.Action(
-                    nameof(ConfirmEmailChange),
-                    "Account",
-                    new { userId = user.Id, yeniEmail, token },
-                    protocol: HttpContext.Request.Scheme);
-
                 var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
                 var tarihSaat = DateTime.Now.ToString("dd MMMM yyyy HH:mm:ss");
 
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeTokenName,
+                    _passwordChangeProtector.Protect(token));
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeNewEmailName,
+                    _passwordChangeProtector.Protect(yeniEmail));
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeOldEmailName,
+                    _passwordChangeProtector.Protect(user.Email ?? string.Empty));
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeExpiresAtName,
+                    DateTimeOffset.UtcNow.AddMinutes(10).ToString("O"));
+
+                var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider);
+
+                if (DevelopmentCodeFallbackAktifMi())
+                {
+                    GelistirmeDogrulamaKodunuHazirla(
+                        verificationCode,
+                        yeniEmail,
+                        VerifyPurposeEmailChange);
+                    TempData["BasariliMesaj"] =
+                        $"Geliştirme ortamında doğrulama kodu ekranda gösterildi. Kodu doğruladığınızda e-posta adresiniz <strong>{yeniEmail}</strong> olarak güncellenecek.";
+                    return RedirectToAction(
+                        nameof(VerifyEmailCode),
+                        new { userId = user.Id, purpose = VerifyPurposeEmailChange });
+                }
+
                 var yeniMailHtml = EmailSablonuOlustur(
-                    baslik: "Yeni E-posta Adresinizi Doğrulayın",
+                    baslik: "Yeni E-posta Adresi Doğrulama Kodu",
                     govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
                            $"<p>Kayıp Eşya Sistemi hesabınızın e-posta adresini <strong>bu adrese ({yeniEmail})</strong> değiştirmek istediğinize dair bir talep aldık.</p>" +
-                           $"<p>Değişikliği onaylamak ve e-postanızı güncellemek için aşağıdaki bağlantıya tıklayın:</p>" +
-                           $"<p style=\"text-align:center;\"><a class=\"btn\" href=\"{callbackUrl}\" style=\"padding:12px 26px;background:#0b5cff;color:white;border-radius:8px;text-decoration:none;font-weight:600;\">Yeni E-postayı Doğrula ve Güncelle</a></p>" +
-                           $"<p><strong>Önemli:</strong> Bu bağlantıya tıklamanızla birlikte hesabınızın girişi (UserName) ve e-postası otomatik olarak <code>{yeniEmail}</code> olarak değiştirilecektir.</p>" +
+                           $"<p>Aşağıdaki doğrulama kodunu girerek e-posta değişikliğini tamamlayın:</p>" +
+                           $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                           $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                           $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{verificationCode}</div>" +
+                           $"</div>" +
+                           $"<p><strong>Önemli:</strong> Kod doğrulandıktan sonra hesabınızın giriş adresi ve e-postası otomatik olarak <code>{yeniEmail}</code> olacaktır.</p>" +
                            $"<hr style=\"border:0;border-top:1px dashed #cbd5e1;\" />" +
                            $"<p style=\"color:#64748b;font-size:12px;\">" +
                            $"<strong>Talep Detayları:</strong><br>" +
                            $"• Eski E-posta: <code>{user.Email}</code><br>" +
                            $"• Yeni E-posta: <code>{yeniEmail}</code><br>" +
                            $"• IP: <code>{ip}</code><br>" +
-                           $"• Tarih: {tarihSaat}</p>");
+                           $"• Tarih: {tarihSaat}<br>" +
+                           $"• Geçerlilik: 10 dakika</p>");
 
                 await _emailSender.SendEmailAsync(
                     yeniEmail,
-                    "[Kayıp Eşya] Yeni E-posta Doğrulama",
+                    "[Kayıp Eşya] Yeni E-posta Doğrulama Kodu",
                     yeniMailHtml);
 
                 try
@@ -701,16 +1210,18 @@ namespace KayipEsyaOtomasyonu.Controllers
                     user.Email, yeniEmail, user.Id, ip);
 
                 TempData["BasariliMesaj"] =
-                    $"E-posta değişikliği talebiniz alındı. Lütfen yeni adresiniz olan <strong>{yeniEmail}</strong> 'e gönderilen doğrulama bağlantısına tıklayın. (Spam / istenmeyen klasörünü kontrol edin.) " +
+                    $"E-posta değişikliği talebiniz alındı. Lütfen yeni adresiniz olan <strong>{yeniEmail}</strong> adresine gönderilen doğrulama kodunu girin. (Spam / istenmeyen klasörünü kontrol edin.) " +
                     $"Güvenliğiniz için kayıtlı eski adresinize de bir bildirim atıldı.";
             }
             catch (Exception ex)
             {
                 TempData["HataMesaji"] =
-                    "E-posta doğrulama gönderilirken hata oluştu: " + ex.Message;
+                    "E-posta doğrulama kodu gönderilirken hata oluştu: " + ex.Message;
             }
 
-            return RedirectToAction(nameof(Profilim));
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposeEmailChange });
         }
 
         [HttpGet]
@@ -838,40 +1349,427 @@ namespace KayipEsyaOtomasyonu.Controllers
 
             if (user.EmailConfirmed)
             {
-                TempData["BasariliMesaji"] = "Bu e-posta zaten doğrulanmış. Giriş yapabilirsiniz.";
+                TempData["BasariliMesaj"] = "Bu e-posta zaten doğrulanmış. Giriş yapabilirsiniz.";
                 return RedirectToAction(nameof(Login));
             }
 
             try
             {
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var callbackUrl = Url.Action(
-                    nameof(ConfirmEmail),
-                    "Account",
-                    new { userId = user.Id, token },
-                    protocol: HttpContext.Request.Scheme);
-
-                var html = EmailSablonuOlustur(
-                    baslik: "E-postanızı Doğrulayın (Tekrar)",
-                    govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
-                           $"<p>Doğrulama e-postasını tekrar istediniz. Hesabınızı doğrulamak için tıklayın:</p>" +
-                           $"<p style=\"text-align:center;\"><a class=\"btn\" href=\"{callbackUrl}\" style=\"padding:12px 26px;background:#0b5cff;color:white;border-radius:8px;text-decoration:none;font-weight:600;\">E-postayı Doğrula</a></p>");
-
-                await _emailSender.SendEmailAsync(
-                    user.Email!,
-                    "Kayıp Eşya Sistemi - Tekrar: E-posta Doğrulama",
-                    html);
+                await KayitDogrulamaKoduGonderAsync(user);
             }
             catch (Exception ex)
             {
                 TempData["HataMesaji"] =
-                    "Doğrulama e-postası gönderilemedi: " + ex.Message;
+                    "Doğrulama kodu gönderilemedi: " + ex.Message;
                 return RedirectToAction(nameof(Login));
             }
 
             TempData["BasariliMesaj"] =
-                "Yeni doğrulama e-postası gönderildi. Lütfen gelen kutunuzu kontrol edin.";
-            return RedirectToAction(nameof(Login));
+                "Yeni doğrulama kodu gönderildi. Lütfen gelen kutunuzu kontrol edin.";
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposeRegister });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendForgotPasswordCode(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                TempData["HataMesaji"] = "Kullanıcı bilgisi bulunamadı.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.AktifMi)
+            {
+                TempData["HataMesaji"] = "Şifre sıfırlama isteği için kullanıcı bulunamadı.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            var resetTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                ForgotPasswordTokenProvider,
+                ForgotPasswordResetTokenName);
+
+            if (string.IsNullOrWhiteSpace(resetTokenProtected))
+            {
+                TempData["HataMesaji"] = "Bekleyen bir şifre sıfırlama isteği bulunamadı. Lütfen yeniden deneyin.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            try
+            {
+                await SifreSifirlamaKoduGonderAsync(user, resetTokenProtected);
+            }
+            catch (Exception ex)
+            {
+                TempData["HataMesaji"] = "Yeni doğrulama kodu gönderilemedi: " + ex.Message;
+            }
+
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposeForgotPassword });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> ResendPasswordChangeCode()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction(nameof(Login));
+
+            var resetTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                PasswordChangeTokenProvider,
+                PasswordChangeResetTokenName);
+
+            var newPasswordProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                PasswordChangeTokenProvider,
+                PasswordChangeNewPasswordName);
+
+            if (string.IsNullOrWhiteSpace(resetTokenProtected) ||
+                string.IsNullOrWhiteSpace(newPasswordProtected))
+            {
+                TempData["HataMesaji"] =
+                    "Bekleyen bir şifre değiştirme isteği bulunamadı. Lütfen işlemi yeniden başlatın.";
+                return RedirectToAction(nameof(Profilim));
+            }
+
+            try
+            {
+                var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider);
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    PasswordChangeTokenProvider,
+                    PasswordChangeExpiresAtName,
+                    DateTimeOffset.UtcNow.AddMinutes(10).ToString("O"));
+
+                if (DevelopmentCodeFallbackAktifMi())
+                {
+                    GelistirmeDogrulamaKodunuHazirla(
+                        verificationCode,
+                        user.Email ?? string.Empty,
+                        VerifyPurposePasswordChange);
+                    TempData["BasariliMesaj"] = "Yeni doğrulama kodu geliştirme ekranında gösterildi.";
+                    return RedirectToAction(
+                        nameof(VerifyEmailCode),
+                        new { userId = user.Id, purpose = VerifyPurposePasswordChange });
+                }
+
+                var html = EmailSablonuOlustur(
+                    baslik: "Şifre Değiştirme Doğrulama Kodu (Tekrar)",
+                    govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                           $"<p>Şifre değiştirme işlemi için yeni bir doğrulama kodu talep ettiniz.</p>" +
+                           $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                           $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                           $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{verificationCode}</div>" +
+                           $"</div>" +
+                           $"<p><strong>Geçerlilik:</strong> 10 dakika</p>");
+
+                await _emailSender.SendEmailAsync(
+                    user.Email!,
+                    "[Kayıp Eşya] Şifre Değiştirme Doğrulama Kodu (Tekrar)",
+                    html);
+            }
+            catch (Exception ex)
+            {
+                TempData["HataMesaji"] = "Yeni doğrulama kodu gönderilemedi: " + ex.Message;
+                return RedirectToAction(
+                    nameof(VerifyEmailCode),
+                    new { userId = user.Id, purpose = VerifyPurposePasswordChange });
+            }
+
+            TempData["BasariliMesaj"] =
+                "Yeni doğrulama kodu e-posta adresinize tekrar gönderildi.";
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposePasswordChange });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> ResendEmailChangeCode()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction(nameof(Login));
+
+            var newEmailProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeNewEmailName);
+
+            var oldEmailProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeOldEmailName);
+
+            var changeTokenProtected = await _userManager.GetAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeTokenName);
+
+            if (string.IsNullOrWhiteSpace(newEmailProtected) ||
+                string.IsNullOrWhiteSpace(changeTokenProtected))
+            {
+                TempData["HataMesaji"] =
+                    "Bekleyen bir e-posta değiştirme isteği bulunamadı. Lütfen işlemi yeniden başlatın.";
+                return RedirectToAction(nameof(Profilim));
+            }
+
+            try
+            {
+                var yeniEmail = _passwordChangeProtector.Unprotect(newEmailProtected);
+                string? eskiEmail = null;
+
+                if (!string.IsNullOrWhiteSpace(oldEmailProtected))
+                {
+                    eskiEmail = _passwordChangeProtector.Unprotect(oldEmailProtected);
+                }
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    EmailChangeTokenProvider,
+                    EmailChangeExpiresAtName,
+                    DateTimeOffset.UtcNow.AddMinutes(10).ToString("O"));
+
+                var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(
+                    user,
+                    TokenOptions.DefaultEmailProvider);
+
+                if (DevelopmentCodeFallbackAktifMi())
+                {
+                    GelistirmeDogrulamaKodunuHazirla(
+                        verificationCode,
+                        yeniEmail,
+                        VerifyPurposeEmailChange);
+                    TempData["BasariliMesaj"] = "Yeni doğrulama kodu geliştirme ekranında gösterildi.";
+                    return RedirectToAction(
+                        nameof(VerifyEmailCode),
+                        new { userId = user.Id, purpose = VerifyPurposeEmailChange });
+                }
+
+                var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Bilinmiyor";
+                var tarihSaat = DateTime.Now.ToString("dd MMMM yyyy HH:mm:ss");
+
+                var yeniMailHtml = EmailSablonuOlustur(
+                    baslik: "Yeni E-posta Adresi Doğrulama Kodu (Tekrar)",
+                    govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                           $"<p>Yeni e-posta adresinizi doğrulamak için yeni bir kod talep ettiniz.</p>" +
+                           $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                           $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                           $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{verificationCode}</div>" +
+                           $"</div>" +
+                           $"<p><strong>Yeni E-posta:</strong> <code>{yeniEmail}</code></p>" +
+                           $"<p style=\"color:#64748b;font-size:12px;\">Eski E-posta: <code>{eskiEmail ?? user.Email ?? "-"}</code><br>IP: <code>{ip}</code><br>Tarih: {tarihSaat}<br>Geçerlilik: 10 dakika</p>");
+
+                await _emailSender.SendEmailAsync(
+                    yeniEmail,
+                    "[Kayıp Eşya] Yeni E-posta Doğrulama Kodu (Tekrar)",
+                    yeniMailHtml);
+            }
+            catch (Exception ex)
+            {
+                TempData["HataMesaji"] = "Yeni doğrulama kodu gönderilemedi: " + ex.Message;
+            }
+
+            return RedirectToAction(
+                nameof(VerifyEmailCode),
+                new { userId = user.Id, purpose = VerifyPurposeEmailChange });
+        }
+
+        private void VerifyCodeViewAyarla(string purpose)
+        {
+            if (string.Equals(purpose, VerifyPurposePasswordChange, StringComparison.OrdinalIgnoreCase))
+            {
+                ViewBag.PageTitle = "Şifre Değişikliği Doğrulama";
+                ViewBag.PageDescription = "Mevcut e-posta adresinize gönderilen kodu girin. Kod doğrulandıktan sonra yeni şifreniz aktif olacaktır.";
+                ViewBag.SubmitText = "Şifreyi Doğrula ve Güncelle";
+                ViewBag.ResendAction = nameof(ResendPasswordChangeCode);
+                return;
+            }
+
+            if (string.Equals(purpose, VerifyPurposeForgotPassword, StringComparison.OrdinalIgnoreCase))
+            {
+                ViewBag.PageTitle = "Şifre Sıfırlama Kodu";
+                ViewBag.PageDescription = "E-posta adresinize gönderilen kodu girin. Kod doğrulandıktan sonra yeni şifrenizi belirleyebilirsiniz.";
+                ViewBag.SubmitText = "Kodu Doğrula ve Yeni Şifreye Geç";
+                ViewBag.ResendAction = nameof(ResendForgotPasswordCode);
+                return;
+            }
+
+            if (string.Equals(purpose, VerifyPurposeEmailChange, StringComparison.OrdinalIgnoreCase))
+            {
+                ViewBag.PageTitle = "Yeni E-posta Doğrulama";
+                ViewBag.PageDescription = "Yeni e-posta adresinize gönderilen kodu girin. Kod doğrulandıktan sonra e-posta adresiniz ve giriş adresiniz güncellenecektir.";
+                ViewBag.SubmitText = "E-postayı Doğrula ve Güncelle";
+                ViewBag.ResendAction = nameof(ResendEmailChangeCode);
+                return;
+            }
+
+            ViewBag.PageTitle = "Kayıt E-posta Doğrulama";
+            ViewBag.PageDescription = "Kayıt olurken verdiğiniz e-posta adresine gönderilen doğrulama kodunu girerek hesabınızı aktif edin.";
+            ViewBag.SubmitText = "Hesabı Doğrula";
+            ViewBag.ResendAction = nameof(ResendConfirmEmail);
+        }
+
+        private bool DevelopmentCodeFallbackAktifMi()
+        {
+            return _environment.IsDevelopment() &&
+                   (string.IsNullOrWhiteSpace(_smtpSettings.Host) ||
+                    string.IsNullOrWhiteSpace(_smtpSettings.Username) ||
+                    string.IsNullOrWhiteSpace(_smtpSettings.Password));
+        }
+
+        private void GelistirmeDogrulamaKodunuHazirla(string code, string email, string purpose)
+        {
+            TempData["DevVerificationCode"] = code;
+            TempData["DevVerificationPurpose"] = purpose;
+            TempData["DevVerificationEmail"] = email;
+            TempData["BasariliMesaj"] =
+                "Geliştirme ortamında SMTP ayarı bulunmadığı için doğrulama kodu ekranda gösterildi.";
+        }
+
+        private async Task KayitDogrulamaKoduGonderAsync(ApplicationUser user)
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+            if (DevelopmentCodeFallbackAktifMi())
+            {
+                GelistirmeDogrulamaKodunuHazirla(token, user.Email ?? string.Empty, VerifyPurposeRegister);
+                return;
+            }
+
+            var html = EmailSablonuOlustur(
+                baslik: "Kayıt Doğrulama Kodu",
+                govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                       $"<p>Kayıp Eşya Yönetim Sistemi hesabınızı aktifleştirmek için aşağıdaki doğrulama kodunu kullanın:</p>" +
+                       $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                       $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                       $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{token}</div>" +
+                       $"</div>" +
+                       $"<p><strong>Not:</strong> Doğrulama tamamlanmadan sisteme giriş yapamazsınız.</p>");
+
+            await _emailSender.SendEmailAsync(
+                user.Email!,
+                "[Kayıp Eşya] Kayıt Doğrulama Kodu",
+                html);
+        }
+
+        private async Task SifreSifirlamaKoduGonderAsync(
+            ApplicationUser user,
+            string? mevcutProtectedResetToken = null)
+        {
+            var verificationCode = await _userManager.GenerateTwoFactorTokenAsync(
+                user,
+                TokenOptions.DefaultEmailProvider);
+
+            if (DevelopmentCodeFallbackAktifMi())
+            {
+                GelistirmeDogrulamaKodunuHazirla(verificationCode, user.Email ?? string.Empty, VerifyPurposeForgotPassword);
+            }
+
+            var protectedResetToken = mevcutProtectedResetToken;
+            if (string.IsNullOrWhiteSpace(protectedResetToken))
+            {
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                protectedResetToken = _passwordChangeProtector.Protect(resetToken);
+
+                await _userManager.SetAuthenticationTokenAsync(
+                    user,
+                    ForgotPasswordTokenProvider,
+                    ForgotPasswordResetTokenName,
+                    protectedResetToken);
+            }
+
+            await _userManager.SetAuthenticationTokenAsync(
+                user,
+                ForgotPasswordTokenProvider,
+                ForgotPasswordExpiresAtName,
+                DateTimeOffset.UtcNow.AddMinutes(10).ToString("O"));
+
+            if (DevelopmentCodeFallbackAktifMi())
+            {
+                return;
+            }
+
+            var html = EmailSablonuOlustur(
+                baslik: "Şifre Sıfırlama Doğrulama Kodu",
+                govde: $"<p>Merhaba <strong>{user.Ad} {user.Soyad}</strong>,</p>" +
+                       $"<p>Kayıp Eşya Yönetim Sistemi hesabınız için şifre sıfırlama talebi oluşturuldu.</p>" +
+                       $"<p>Aşağıdaki doğrulama kodunu girerek yeni şifrenizi belirleme ekranına geçin:</p>" +
+                       $"<div style=\"margin:24px 0;padding:18px;border-radius:14px;background:#eff6ff;border:1px dashed #0b5cff;text-align:center;\">" +
+                       $"<div style=\"font-size:13px;color:#475569;margin-bottom:8px;\">Doğrulama Kodu</div>" +
+                       $"<div style=\"font-size:34px;letter-spacing:8px;font-weight:800;color:#0b5cff;\">{verificationCode}</div>" +
+                       $"</div>" +
+                       $"<p><strong>Geçerlilik:</strong> 10 dakika</p>");
+
+            await _emailSender.SendEmailAsync(
+                user.Email!,
+                "[Kayıp Eşya] Şifre Sıfırlama Doğrulama Kodu",
+                html);
+        }
+
+        private async Task TemizleBekleyenSifreDegisikligiAsync(ApplicationUser user)
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                PasswordChangeTokenProvider,
+                PasswordChangeResetTokenName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                PasswordChangeTokenProvider,
+                PasswordChangeNewPasswordName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                PasswordChangeTokenProvider,
+                PasswordChangeExpiresAtName);
+        }
+
+        private async Task TemizleBekleyenSifreSifirlamaAsync(ApplicationUser user)
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                ForgotPasswordTokenProvider,
+                ForgotPasswordResetTokenName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                ForgotPasswordTokenProvider,
+                ForgotPasswordExpiresAtName);
+        }
+
+        private async Task TemizleBekleyenEmailDegisikligiAsync(ApplicationUser user)
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeTokenName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeNewEmailName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeOldEmailName);
+
+            await _userManager.RemoveAuthenticationTokenAsync(
+                user,
+                EmailChangeTokenProvider,
+                EmailChangeExpiresAtName);
         }
 
         private async Task SifreDegisikligiBildirimMailiGonderAsync(
