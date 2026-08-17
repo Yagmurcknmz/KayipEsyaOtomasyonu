@@ -37,7 +37,7 @@ Kayıp Eşya Otomasyonu; kamu kurumları, üniversite kampüsleri, havalimanlar�
 ### 2. Proje Dizinine Geçiş
 ```bash
 cd KayipEsyaOtomasyonu
-### 3. Veritabanı Bağlantısını (Connection String) Yapılandırınappsettings.json dosyasını açarak DefaultConnection dizesini kendi yerel SQL Server ayarlarınıza göre düzenleyin[cite: 4]:JSON{
+ 3. Veritabanı Bağlantısını (Connection String) Yapılandırınappsettings.json dosyasını açarak DefaultConnection dizesini kendi yerel SQL Server ayarlarınıza göre düzenleyin[cite: 4]:JSON{
   "ConnectionStrings": {
     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=KayipEsyaOtomasyonuDb;Trusted_Connection=True;MultipleActiveResultSets=true"
   }
