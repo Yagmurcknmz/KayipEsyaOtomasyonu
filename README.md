@@ -1,53 +1,65 @@
-# Kayıp Eşya Otomasyonu Sistemi
+# 🔍 Kayıp Eşya Otomasyonu
 
-Kayıp Eşya Otomasyonu; kamu kurumları, üniversite kampüsleri, havalimanları, belediyeler ve toplu taşıma merkezlerinde kaybolan veya bulunan eşyaların tek bir merkezi dijital havuzda toplanmasını, güvenli biçimde takip edilmesini ve akıllı metin benzerlik algoritmalarıyla otomatik eşleştirilmesini sağlayan kurumsal bir web otomasyonudur
-
----
-
-# Öne Çıkan Özellikler
-
-* **Rol Tabanlı Güvenlik (RBAC):** `Admin`, `Personel` ve `Vatandaş/Kullanıcı` rolleri ile ayrıştırılmış yetkilendirme ve ekran yapısı.
-* **Kayıp Bildirimi ve Başvuru:** Vatandaşların kaybettiği eşyayı kategori, konum, tarih, detaylı açıklama ve fotoğraflarla sisteme bildirebilmesi.
-* **Bulunan Eşya Envanteri:** Personel tarafından teslim alınan buluntu eşyaların çoklu fotoğraf, teslim yeri ve durum bilgisi (*Depoda*, *Eşleşti*, *Teslim Edildi*) ile kayıt altına alınması.
-* **Akıllı Eşleştirme Motoru (Fuzzy Matching):** `FuzzyHelper` kütüphanesi ile *Levenshtein Distance* ve anahtar kelime benzerlik analizi yapılarak başvurular ve bulunan eşyalar arasında otomatik yüzdelik benzerlik skorlaması (%0 - %100).
-* **Teslimat ve Tutanak Süreci:** Doğrulanan eşyaların kimlik teyidi, teslim tutanağı ve yetkili personel onayıyla hak sahibine teslim edilmesi ve arşivlenmesi.
-* **Audit Logging (Denetim İzi):** Sistem genelinde yapılan kritik ekleme, güncelleme ve silme işlemlerinin IP, kullanıcı ve zaman damgasıyla kayıt altına alınması.
-* **E-Posta Bildirim Servisi:** SMTP tabanlı e-posta aktivasyonu ve şifre sıfırlama mekanizması.
-* **Medya Yönetimi:** Yüklenen görsellerin dinamik dizinlenmesi (*Yıl/Ay/Gün*) ve otomatik küçük resim (*thumbnail*) üretimi.
+Kayıp ve bulunan eşyaların tek bir merkezden kaydedilmesini, **Fuzzy Matching (Bulanık Benzerlik)** algoritmasıyla otomatik eşleştirilmesini ve güvenli teslimat tutanağı ile arşivlenmesini sağlayan **ASP.NET Core MVC** tabanlı kurumsal web otomasyonudur.
 
 ---
 
-# Kullanılan Teknolojiler
+## ⚡ Temel Özellikler
 
-* **Backend:** .NET 8.0 / ASP.NET Core MVC (Model-View-Controller)
-* **Veritabanı & ORM:** Microsoft SQL Server & Entity Framework Core 8 (Code-First)
-* **Kimlik Yönetimi:** ASP.NET Core Identity
-* **Ön Yüz (UI):** Bootstrap 5.3, HTML5, CSS3, jQuery, jQuery Validation & Unobtrusive Scripts
-* **Algoritmik Altyapı:** Levenshtein Distance & Token Tabanlı Metin Analitiği
+- 👥 **Rol Bazlı Yetki:** `Admin`, `Personel` ve `Vatandaş` rolleri (ASP.NET Core Identity).
+- 📢 **Kayıp Bildirimi & Envanter:** Fotoğraflı, konum ve kategori etiketli kayıp/buluntu eşya kaydı.
+- 🧠 **Akıllı Eşleştirme:** `FuzzyHelper` ile Levenshtein mesafesi ve anahtar kelime analizi üzerinden otomatik benzerlik skorlaması (%0 - %100).
+- 📝 **Teslimat & Tutanak:** Eşleşen eşyaların kimlik doğrulaması ve teslim tutanağı ile teslimi.
+- 🛡️ **Denetim İzi (Audit Log):** Sistemdeki ekleme, güncelleme ve silme hareketlerinin loglanması.
+- 📧 **E-Posta Servisi:** SMTP tabanlı e-posta onayı ve şifre sıfırlama.
 
 ---
 
-# Kurulum ve Çalıştırma Yönergesi
+## 🛠️ Teknoloji Yığını
 
-### 1. Ön Gereksinimler
-* [.NET 8.0 SDK](https://dotnet.microsoft.com/download) veya üzeri
-* [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (MSSQL LocalDB, Express veya Developer Edition)
-* [Visual Studio 2022](https://visualstudio.microsoft.com/) veya [VS Code](https://code.visualstudio.com/)
+- **Backend:** C# / .NET 8.0 / ASP.NET Core MVC
+- **Veritabanı & ORM:** Microsoft SQL Server & Entity Framework Core 8 (Code-First)
+- **Güvenlik:** ASP.NET Core Identity, Anti-CSRF, PBKDF2 Hashing
+- **Frontend:** Bootstrap 5, HTML5/CSS3, jQuery & Unobtrusive Validation
 
-### 2. Proje Dizinine Geçiş
+---
+
+## 🚀 Kurulum ve Çalıştırma Adımları
+
+### 1. Gereksinimler
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
+- [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (MSSQL LocalDB, Express vb.)
+- Visual Studio 2022 veya VS Code
+
+### 2. Projeyi İndirin ve Dizinine Geçin
 ```bash
-cd KayipEsyaOtomasyonu
-3. Veritabanı Bağlantısını (Connection String) Yapılandırınappsettings.json dosyasını açarak DefaultConnection dizesini kendi yerel SQL Server ayarlarınıza göre düzenleyin:JSON{
+git clone [https://github.com/yagmurcknmz/kayipesyaotomasyonu.git](https://github.com/yagmurcknmz/kayipesyaotomasyonu.git)
+cd kayipesyaotomasyonu/KayipEsyaOtomasyonu
+3. Veritabanı Bağlantısını (Connection String) Ayarlayın
+appsettings.json dosyasını açıp yerel SQL Server ayarınıza göre düzenleyin:
+
+JSON
+{
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=KayipEsyaOtomasyonuDb;Trusted_Connection=True;MultipleActiveResultSets=true"
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=KayipEsyaDb;Trusted_Connection=True;MultipleActiveResultSets=true"
   }
 }
-4. Bağımlılıkları YükleyinBashdotnet restore
-5. Veritabanını Oluşturun ve Migration'ları UygulayınTerminal veya Visual Studio Package Manager Console üzerinden aşağıdaki komutu çalıştırın:Bashdotnet ef database update
-Not: DbInitializer sınıfı, uygulama ilk kez çalıştığında varsayılan rolleri (Admin, Personel, Vatandas) ve başlangıç kategorilerini otomatik olarak veritabanına ekler.
-6. Uygulamayı Başlatın
-Bashdotnet run
-Uygulama derlendikten sonra tarayıcınızdan https://localhost:5001 veya http://localhost:5000 adresine giderek sistemi kullanmaya başlayabilirsiniz.
+4. Bağımlılıkları Yükleyin & Veritabanını Oluşturun
+Bash
+dotnet restore
+dotnet ef database update
+💡 Not: DbInitializer ilk çalıştırmada varsayılan rolleri ve başlangıç kategorilerini otomatik oluşturur.
+
+5. Projeyi Başlatın
+Bash
+dotnet run
+Tarayıcınızdan https://localhost:5001 veya http://localhost:5000 adresine giderek sistemi kullanabilirsiniz.
+
+👥 Kullanıcı Rolleri
+Rol	Yetki Kapsamı
+ Admin	Tam yetki, Personel ekleme/yönetme, Denetim izlerini (Audit Logs) inceleme
+ Personel	Buluntu eşya kaydı, Eşleştirme onaylama, Teslimat tutanağı oluşturma
+ Vatandaş	Kayıp bildiriminde bulunma, Kendi başvuru durumlarını takip etme
 
 
 Bu proje eğitim ve staj amacıyla geliştirilmiştir.
