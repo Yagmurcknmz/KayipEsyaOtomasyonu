@@ -44,7 +44,9 @@ cd KayipEsyaOtomasyonu
 }
 4. Bağımlılıkları YükleyinBashdotnet restore
 5. Veritabanını Oluşturun ve Migration'ları UygulayınTerminal veya Visual Studio Package Manager Console üzerinden aşağıdaki komutu çalıştırın[cite: 4]:Bashdotnet ef database update
-Not: DbInitializer sınıfı, uygulama ilk kez çalıştığında varsayılan rolleri (Admin, Personel, Vatandas) ve başlangıç kategorilerini otomatik olarak veritabanına ekler.  6. Uygulamayı BaşlatınBashdotnet run
+Not: DbInitializer sınıfı, uygulama ilk kez çalıştığında varsayılan rolleri (Admin, Personel, Vatandas) ve başlangıç kategorilerini otomatik olarak veritabanına ekler.
+6. Uygulamayı Başlatın
+Bashdotnet run
 Uygulama derlendikten sonra tarayıcınızdan https://localhost:5001 veya http://localhost:5000 adresine giderek sistemi kullanmaya başlayabilirsiniz.
 
 
