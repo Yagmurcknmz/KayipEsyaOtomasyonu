@@ -1,95 +1,65 @@
-# Kayıp Eşya Yönetim Sistemi
-Kayıp eşyaların kayıt altına alınması, vatandaş başvurularının yönetilmesi, bulunan eşyalarla başvuruların eşleştirilmesi ve teslim süreçlerinin takip edilmesi amacıyla geliştirilmiş web tabanlı bir otomasyon sistemidir.
-# Kullanılan Teknolojiler
-* ASP.NET Core MVC
-* C#
-* Entity Framework Core
-* ASP.NET Core Identity
-* Microsoft SQL Server
-* Razor View Engine
-* HTML5
-* CSS3
-* Bootstrap
-* Bootstrap Icons
-* JavaScript
-# Kullanıcı Rolleri
-Sistemde üç farklı kullanıcı rolü bulunmaktadır:
-* Admin
-* Personel
-* Vatandaş
-# Temel Özellikler
+# 🔍 Kayıp Eşya Otomasyonu
 
-* Rol tabanlı giriş ve yetkilendirme
-* Vatandaş kayıt ve giriş sistemi
-* Kayıp eşya başvurusu oluşturma
-* Belediyeye teslim edilen eşyaları kaydetme
-* Kategori ekleme, düzenleme ve aktif/pasif yönetimi
-* Başvuru, kategori ve durum bazlı arama ve filtreleme
-* Otomatik eşleştirme sistemi
-* Manuel eşleştirme oluşturma
-* Yüzdelik eşleşme skoru hesaplama
-* Eşleşme onaylama ve reddetme
-* Vatandaşa otomatik bildirim gönderme
-* Bildirimleri okunmuş veya okunmamış olarak takip etme
-* Teslim işlemi oluşturma
-* Yazdırılabilir teslim tutanağı hazırlama
-* Admin ve personel yönetim paneli
-* Kayıp eşya ve başvuru istatistikleri
-* Mobil uyumlu kullanıcı arayüzü
-# Projeyi Çalıştırma
-1. Projeyi bilgisayarınıza klonlayın:
+Kayıp ve bulunan eşyaların tek bir merkezden kaydedilmesini, **Fuzzy Matching (Bulanık Benzerlik)** algoritmasıyla otomatik eşleştirilmesini ve güvenli teslimat tutanağı ile arşivlenmesini sağlayan **ASP.NET Core MVC** tabanlı kurumsal web otomasyonudur.
 
+---
+
+## ⚡ Temel Özellikler
+
+- 👥 **Rol Bazlı Yetki:** `Admin`, `Personel` ve `Vatandaş` rolleri (ASP.NET Core Identity).
+- 📢 **Kayıp Bildirimi & Envanter:** Fotoğraflı, konum ve kategori etiketli kayıp/buluntu eşya kaydı.
+- 🧠 **Akıllı Eşleştirme:** `FuzzyHelper` ile Levenshtein mesafesi ve anahtar kelime analizi üzerinden otomatik benzerlik skorlaması (%0 - %100).
+- 📝 **Teslimat & Tutanak:** Eşleşen eşyaların kimlik doğrulaması ve teslim tutanağı ile teslimi.
+- 🛡️ **Denetim İzi (Audit Log):** Sistemdeki ekleme, güncelleme ve silme hareketlerinin loglanması.
+- 📧 **E-Posta Servisi:** SMTP tabanlı e-posta onayı ve şifre sıfırlama.
+
+---
+
+## 🛠️ Teknoloji Yığını
+
+- **Backend:** C# / .NET 8.0 / ASP.NET Core MVC
+- **Veritabanı & ORM:** Microsoft SQL Server & Entity Framework Core 8 (Code-First)
+- **Güvenlik:** ASP.NET Core Identity, Anti-CSRF, PBKDF2 Hashing
+- **Frontend:** Bootstrap 5, HTML5/CSS3, jQuery & Unobtrusive Validation
+
+---
+
+## 🚀 Kurulum ve Çalıştırma Adımları
+
+### 1. Gereksinimler
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download)
+- [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (MSSQL LocalDB, Express vb.)
+- Visual Studio 2022 veya VS Code
+
+### 2. Projeyi İndirin ve Dizinine Geçin
 ```bash
-git clone PROJENIN_GITHUB_ADRESI
-```
+git clone [https://github.com/yagmurcknmz/kayipesyaotomasyonu.git](https://github.com/yagmurcknmz/kayipesyaotomasyonu.git)
+cd kayipesyaotomasyonu/KayipEsyaOtomasyonu
+3. Veritabanı Bağlantısını (Connection String) Ayarlayın
+appsettings.json dosyasını açıp yerel SQL Server ayarınıza göre düzenleyin:
 
-2. Projeyi Visual Studio ile açın.
-
-3. `appsettings.json` dosyasındaki SQL Server bağlantı bilgisini kendi sisteminize göre düzenleyin:
-
-```json
+JSON
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=SUNUCU_ADI;Database=KayipEsyaOtomasyonuDb;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=KayipEsyaDb;Trusted_Connection=True;MultipleActiveResultSets=true"
   }
 }
-```
-4. Package Manager Console üzerinden veritabanını oluşturun:
+4. Bağımlılıkları Yükleyin & Veritabanını Oluşturun
+Bash
+dotnet restore
+dotnet ef database update
+💡 Not: DbInitializer ilk çalıştırmada varsayılan rolleri ve başlangıç kategorilerini otomatik oluşturur.
 
-```powershell
-Update-Database
-```
-5. Projeyi çalıştırmak için Visual Studio üzerinden `F5` tuşuna basın.
+5. Projeyi Başlatın
+Bash
+dotnet run
+Tarayıcınızdan https://localhost:5001 veya http://localhost:5000 adresine giderek sistemi kullanabilirsiniz.
 
-## Proje Yapısı
+👥 Kullanıcı Rolleri
+Rol	Yetki Kapsamı
+ Admin	Tam yetki, Personel ekleme/yönetme, Denetim izlerini (Audit Logs) inceleme
+ Personel	Buluntu eşya kaydı, Eşleştirme onaylama, Teslimat tutanağı oluşturma
+ Vatandaş	Kayıp bildiriminde bulunma, Kendi başvuru durumlarını takip etme
 
-```text
-Controllers/    Uygulamanın işlem ve yönlendirme katmanı
-Data/           Veritabanı bağlantısı ve başlangıç verileri
-Models/         Veritabanı modelleri
-Services/       Uygulamanın servis ve iş mantığı
-ViewModels/     Sayfalara özel veri modelleri
-Views/          Razor kullanıcı arayüzleri
-wwwroot/        CSS, JavaScript ve statik dosyalar
-Migrations/     Entity Framework Core veritabanı geçişleri
-Program.cs      Uygulama servisleri ve başlangıç ayarları
-``
 
-# Güvenlik
-Projede ASP.NET Core Identity kullanılmıştır. Kullanıcı parolaları güvenli biçimde saklanır ve rol tabanlı yetkilendirme ile vatandaş, personel ve admin sayfalarına erişimler birbirinden ayrılmıştır.
-
-Ayrıca sistemde:
-
-* Başarısız girişlerde hesap kilitleme
-* Güvenli oturum yönetimi
-* Tekrarlanan e-posta kontrolü
-* Form doğrulama işlemleri
-* Yetkisiz erişim yönlendirmesi
-* POST işlemlerinde güvenlik kontrolleri
-uygulanmıştır.
-
-.
-
-Projenin amacı; vatandaş başvurularının, bulunan eşyaların, eşleşmelerin ve teslim süreçlerinin tek bir sistem üzerinden daha düzenli ve takip edilebilir şekilde yönetilmesini sağlamaktır.
-
-> Bu proje eğitim ve staj çalışması amacıyla geliştirilmiştir.
+Bu proje eğitim ve staj amacıyla geliştirilmiştir.
